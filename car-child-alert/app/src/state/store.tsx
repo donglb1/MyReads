@@ -23,6 +23,7 @@ import {
 import { loadData, saveData, newId } from '@/services/storage';
 import { AlertEngine, EngineState } from '@/services/alertEngine';
 import { tripDetector } from '@/services/tripDetector';
+import { startBluetoothDetection, stopBluetoothDetection } from '@/services/bluetoothClassic';
 import { contactService } from '@/services/contact';
 import { getCurrentLocation } from '@/services/location';
 import {
@@ -153,8 +154,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     if (data.settings.autoDetect) {
       tripDetector.enableAutoDetect();
+      // Bluetooth chỉ chạy trên Android + dev build; no-op an toàn nếu không có.
+      startBluetoothDetection(() =>
+        dataRef.current.vehicles.map((v) => v.bluetoothId ?? '').filter(Boolean),
+      );
     } else {
       tripDetector.disableAutoDetect();
+      stopBluetoothDetection();
     }
   }, [ready, data.settings.autoDetect]);
 

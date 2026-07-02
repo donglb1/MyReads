@@ -208,19 +208,27 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
 > 3. **Tự động phát hiện:** đưa vào **ngay Phase 1** (Bluetooth xe + phát hiện lái xe),
 >    kèm **chế độ mô phỏng** để chạy được trên Expo Go / simulator khi không có thiết bị.
 
-**Phase 1 — Prototype phần mềm (mục tiêu gần):**
-- [ ] Khởi tạo project Expo (TS), điều hướng, store, mô hình dữ liệu.
-- [ ] Onboarding + xin quyền.
-- [ ] Quản lý hồ sơ bé, xe, liên hệ khẩn cấp.
-- [ ] Bắt đầu/kết thúc chuyến: **thủ công + tự động (Bluetooth/activity)** với mô phỏng.
-- [ ] alertEngine (máy trạng thái leo thang) + chuông/rung/thông báo + màn hình đếm ngược.
-- [ ] Gọi/SMS người thân qua **provider backend cắm-được** (mock + Twilio/Stringee stub),
-      fallback `tel:`/SMS kèm vị trí.
-- [ ] Nhật ký chuyến & cảnh báo.
+**Phase 1 — Prototype phần mềm (gần như hoàn tất):**
+- [x] Khởi tạo project Expo (TS), điều hướng, store, mô hình dữ liệu.
+- [x] Onboarding + xin quyền.
+- [x] Quản lý hồ sơ bé, xe, liên hệ khẩn cấp.
+- [x] Bắt đầu/kết thúc chuyến: thủ công ✅ + tự động theo tốc độ GPS ✅ + mô phỏng ✅ +
+      **Bluetooth Classic (Android, cần dev build)** ✅ (iOS dùng GPS/activity thay thế).
+- [x] alertEngine (máy trạng thái leo thang) + chuông/rung/thông báo + màn hình đếm ngược.
+      *(logic đã kiểm chứng end-to-end)*
+- [x] Gọi/SMS người thân qua provider cắm-được: `mock` + `device` (tel:/SMS) ✅ và
+      **backend thật** (`server/`, Twilio + Stringee, đã test bằng mock) ✅.
+- [x] Nhật ký chuyến & cảnh báo.
+
+> **Còn lại để "chạy thật" (cần tài nguyên của người dùng, không phải code):**
+> - Điền khoá Twilio/Stringee + deploy `server/` để có cuộc gọi/SMS thật.
+> - Tạo **dev build** (`expo prebuild` / EAS dev client) để Bluetooth Classic hoạt động
+>   (không chạy trong Expo Go), và test trên **điện thoại Android + xe thật**.
 
 **Phase 2 — Nâng cấp thực địa:**
-- [ ] Hoàn thiện provider Twilio/Stringee thật + backend đồng bộ nhiều thiết bị (bố + mẹ).
+- [ ] Backend đồng bộ nhiều thiết bị (bố + mẹ cùng nhận cảnh báo).
 - [ ] Tinh chỉnh geofence (nhà/trường), học thói quen để giảm báo nhầm.
+- [ ] iOS: khai thác CarPlay/hands-free để cải thiện phát hiện kết thúc chuyến.
 
 **Phase 3 — Phần cứng:**
 - [ ] Thẻ BLE gắn ghế trẻ / cảm biến trọng lượng.

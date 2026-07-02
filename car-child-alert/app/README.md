@@ -73,11 +73,32 @@ contactService.setProvider('backend'); // thay cho 'mock'
 
 Xem `src/services/contact/backendProvider.ts` để biết chi tiết interface.
 
+## Bluetooth xe thật (Android) — cần dev build
+
+Phát hiện tự động khi bạn **xuống xe** dựa trên việc điện thoại **ngắt kết nối Bluetooth**
+với head-unit của xe. Vì đây là native module (`react-native-bluetooth-classic`), app
+**không chạy trong Expo Go** khi bật tính năng này — phải tạo **dev build**:
+
+```bash
+cd car-child-alert/app
+npm install
+npx expo prebuild                 # sinh thư mục android/ (và ios/)
+npx expo run:android              # cài lên máy Android thật
+```
+
+Sau đó vào **Cài đặt → Xe**, nhập **tên/địa chỉ Bluetooth** của xe (vd "Car Multimedia"
+hoặc `00:11:22:33:44:55`) để app biết thiết bị nào là xe.
+
+- **Android:** nghe sự kiện kết nối/ngắt Bluetooth Classic (rảnh tay) của xe.
+- **iOS:** hệ điều hành không cho app thấy kết nối/ngắt của loa xe thường (giới hạn MFi),
+  nên iOS tự động dựa trên **tốc độ GPS** (đang lái → dừng hẳn). Vẫn dùng được nút mô phỏng.
+- Nếu chạy trong Expo Go (không có module), phần Bluetooth **tự bỏ qua an toàn**, app vẫn
+  chạy bình thường với GPS/activity + mô phỏng.
+
 ## Giới hạn hiện tại (Phase 1)
 
-- Provider gọi/SMS mặc định là **mock**; backend thật cần bạn tự dựng & cấu hình khoá.
-- **Bluetooth xe**: đã có khung (`tripDetector.onBluetoothDisconnected()`) nhưng phát hiện
-  BLE cần thư viện native ngoài Expo Go; hiện tự động phát hiện dựa trên **tốc độ GPS**
-  (đang lái → dừng hẳn) và **nút mô phỏng**.
+- Provider gọi/SMS mặc định là **mock**. Để gọi/SMS thật: dựng & deploy `../server/`
+  (Twilio hoặc Stringee), rồi `contactService.configureBackend(...)` + `setProvider('backend')`.
+- Bluetooth thật cần **dev build** + điện thoại Android + xe (xem mục trên).
 - Chạy nền liên tục trên iOS bị hạn chế; bản production nên bổ sung foreground service
   (Android) và cân nhắc thiết bị phần cứng (xem DESIGN.md — Phase 3).

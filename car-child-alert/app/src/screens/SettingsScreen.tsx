@@ -11,6 +11,7 @@ export default function SettingsScreen() {
 
   const [childName, setChildName] = useState('');
   const [vehicleName, setVehicleName] = useState('');
+  const [vehicleBt, setVehicleBt] = useState('');
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -37,7 +38,11 @@ export default function SettingsScreen() {
         <Card>
           <Title>Xe</Title>
           {data.vehicles.map((v) => (
-            <RowItem key={v.id} label={v.name} onRemove={() => removeVehicle(v.id)} />
+            <RowItem
+              key={v.id}
+              label={v.bluetoothId ? `${v.name} · BT: ${v.bluetoothId}` : v.name}
+              onRemove={() => removeVehicle(v.id)}
+            />
           ))}
           <Field
             label="Tên xe"
@@ -45,15 +50,29 @@ export default function SettingsScreen() {
             onChangeText={setVehicleName}
             placeholder="VD: Xe nhà"
           />
+          <Field
+            label="Tên/địa chỉ Bluetooth của xe (tuỳ chọn)"
+            value={vehicleBt}
+            onChangeText={setVehicleBt}
+            placeholder="VD: Car Multimedia hoặc 00:11:22:33:44:55"
+          />
           <Button
             label="Thêm xe"
             onPress={() => {
               if (!vehicleName.trim()) return;
-              addVehicle({ name: vehicleName.trim() });
+              addVehicle({
+                name: vehicleName.trim(),
+                bluetoothId: vehicleBt.trim() || undefined,
+              });
               setVehicleName('');
+              setVehicleBt('');
             }}
             disabled={!vehicleName.trim()}
           />
+          <Subtle>
+            Định danh Bluetooth giúp tự phát hiện khi bạn xuống xe (chỉ Android + bản dev
+            build; xem README).
+          </Subtle>
         </Card>
 
         <Card>
