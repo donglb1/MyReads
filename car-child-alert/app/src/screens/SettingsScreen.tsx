@@ -143,6 +143,11 @@ export default function SettingsScreen() {
             onChange={(v) => updateSettings({ alarmSound: v })}
           />
           <ToggleRow
+            label="Học thói quen (giảm báo nhầm)"
+            value={s.adaptiveConfirm}
+            onChange={(v) => updateSettings({ adaptiveConfirm: v })}
+          />
+          <ToggleRow
             label="Đính kèm vị trí GPS"
             value={s.attachLocation}
             onChange={(v) => updateSettings({ attachLocation: v })}

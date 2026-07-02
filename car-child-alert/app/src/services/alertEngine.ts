@@ -43,6 +43,7 @@ export class AlertEngine {
   private contacts: Contact[] = [];
   private contactIndex = 0;
   private lastLocation?: GeoPoint;
+  private confirmSeconds = 0;
 
   constructor(private hooks: EngineHooks, settings: Settings) {
     this.settings = settings;
@@ -52,18 +53,31 @@ export class AlertEngine {
     return this.state;
   }
 
+  /** Thời gian xác nhận (T1) hiệu lực cho lần cảnh báo hiện tại (đã áp học thói quen). */
+  getConfirmSeconds(): number {
+    return this.confirmSeconds;
+  }
+
   updateSettings(settings: Settings): void {
     this.settings = settings;
   }
 
-  /** Bắt đầu chu trình xác nhận sau khi chuyến đi kết thúc. */
-  async armConfirm(contacts: Contact[]): Promise<void> {
+  /**
+   * Bắt đầu chu trình xác nhận sau khi chuyến đi kết thúc.
+   * @param opts.confirmSeconds ghi đè thời gian xác nhận T1 (do học thói quen tính).
+   * @param opts.location vị trí đã biết (bỏ qua bước tự lấy lại).
+   */
+  async armConfirm(
+    contacts: Contact[],
+    opts?: { confirmSeconds?: number; location?: GeoPoint },
+  ): Promise<void> {
     // Sắp xếp người thân theo độ ưu tiên tăng dần (1 gọi trước).
     this.contacts = [...contacts].sort((a, b) => a.priority - b.priority);
     this.contactIndex = 0;
-    this.lastLocation = await this.resolveLocation();
+    this.lastLocation = opts?.location ?? (await this.resolveLocation());
+    this.confirmSeconds = Math.max(0, opts?.confirmSeconds ?? this.settings.t1Seconds);
     this.setState('confirming');
-    this.schedule(this.settings.t1Seconds, () => this.toAlarmLocal());
+    this.schedule(this.confirmSeconds, () => this.toAlarmLocal());
   }
 
   /** Người dùng xác nhận đã đưa bé ra khỏi xe → dừng mọi cảnh báo. */

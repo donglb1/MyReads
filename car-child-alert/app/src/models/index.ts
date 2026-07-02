@@ -71,6 +71,17 @@ export interface Settings {
   attachLocation: boolean;
   /** Mã gia đình (bố + mẹ nhập cùng mã để cùng nhận cảnh báo trên nhiều máy). */
   familyId?: string;
+  /** Bật học thói quen: điều chỉnh thời gian xác nhận theo ngữ cảnh (không tắt báo động). */
+  adaptiveConfirm: boolean;
+}
+
+/** Thống kê thói quen cho một ngữ cảnh (nơi + giờ + thứ trong tuần). */
+export interface HabitStat {
+  /** Số lần xác nhận ngay ở bước hỏi (ngữ cảnh "quen thuộc", ít rủi ro). */
+  acks: number;
+  /** Số lần để leo thang thành báo động (ngữ cảnh "rủi ro"). */
+  escalations: number;
+  lastSeen: number;
 }
 
 /** Địa điểm an toàn (nhà/trường...) để gắn nhãn nơi đỗ xe. */
@@ -89,6 +100,7 @@ export interface AppData {
   trips: Trip[];
   alerts: AlertEvent[];
   places: SafePlace[];
+  habits: Record<string, HabitStat>;
   settings: Settings;
   onboarded: boolean;
 }
@@ -100,6 +112,7 @@ export const defaultSettings: Settings = {
   autoDetect: true,
   alarmSound: true,
   attachLocation: true,
+  adaptiveConfirm: true,
 };
 
 export const emptyData: AppData = {
@@ -109,6 +122,7 @@ export const emptyData: AppData = {
   trips: [],
   alerts: [],
   places: [],
+  habits: {},
   settings: defaultSettings,
   onboarded: false,
 };

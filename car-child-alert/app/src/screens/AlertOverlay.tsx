@@ -23,22 +23,23 @@ const LEVEL_TEXT: Record<Exclude<EngineState, 'idle'>, { title: string; sub: str
   },
 };
 
-/** Số giây chờ tương ứng mỗi trạng thái, để hiển thị đếm ngược. */
-function secondsFor(state: EngineState, s: { t1Seconds: number; t2Seconds: number }): number | null {
-  if (state === 'confirming') return s.t1Seconds;
-  if (state === 'alarm_local') return s.t2Seconds;
-  return null;
-}
-
 export default function AlertOverlay() {
-  const { engineState, acknowledge, data } = useStore();
+  const { engineState, acknowledge, data, confirmSeconds, isRoutineContext } = useStore();
   const visible = engineState !== 'idle';
   const [remaining, setRemaining] = useState<number | null>(null);
 
+  // Số giây chờ tương ứng mỗi trạng thái (bước xác nhận dùng thời gian đã áp học thói quen).
+  const secondsFor = (state: EngineState): number | null => {
+    if (state === 'confirming') return confirmSeconds;
+    if (state === 'alarm_local') return data.settings.t2Seconds;
+    return null;
+  };
+
   // Reset đếm ngược mỗi khi đổi trạng thái.
   useEffect(() => {
-    setRemaining(secondsFor(engineState, data.settings));
-  }, [engineState, data.settings]);
+    setRemaining(secondsFor(engineState));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineState, confirmSeconds, data.settings.t2Seconds]);
 
   useEffect(() => {
     if (remaining === null) return;
@@ -57,6 +58,10 @@ export default function AlertOverlay() {
         <Text style={styles.emoji}>🚗👶</Text>
         <Text style={styles.title}>{info.title}</Text>
         <Text style={styles.sub}>{info.sub}</Text>
+
+        {engineState === 'confirming' && isRoutineContext && (
+          <Text style={styles.hint}>💡 Bạn thường xuống xe ở đây — đã nới thời gian xác nhận.</Text>
+        )}
 
         {remaining !== null && (
           <Text style={styles.countdown}>{remaining}s</Text>
@@ -95,6 +100,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     opacity: 0.9,
   },
+  hint: { color: colors.white, fontSize: 14, textAlign: 'center', marginTop: spacing.sm, opacity: 0.85 },
   countdown: { color: colors.white, fontSize: 72, fontWeight: '900', marginVertical: spacing.lg },
   ackBtn: {
     backgroundColor: colors.white,

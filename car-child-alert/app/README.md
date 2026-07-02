@@ -102,6 +102,11 @@ hoặc `00:11:22:33:44:55`) để app biết thiết bị nào là xe.
   (Cần đã cấu hình backend — xem phần dưới.)
 - **Địa điểm an toàn:** vào **Cài đặt → Địa điểm an toàn**, đặt tên (Nhà/Trường) và lưu
   vị trí hiện tại. Cảnh báo/SMS sẽ ghi **tên nơi đỗ** thay vì chỉ toạ độ.
+- **Học thói quen (giảm báo nhầm):** app ghi nhận nơi/giờ bạn hay kết thúc chuyến và cách
+  bạn xử lý (xác nhận ngay hay để báo động). Nơi bạn **thường xuống xe an toàn** → app
+  **nới dài** thời gian xác nhận (ít báo nhầm hơn); nơi từng **để leo thang** → **rút ngắn**
+  để bảo vệ nhanh hơn. Có giới hạn min/max và **không bao giờ tắt chuông/gọi**. Bật/tắt ở
+  **Cài đặt → Cảnh báo → Học thói quen**.
 
 Đồng bộ đa thiết bị dùng **Expo push** qua backend (`../server/`: `/register`,
 `/notify-family`). Push token lấy tự động khi có mã gia đình + backend đã cấu hình.

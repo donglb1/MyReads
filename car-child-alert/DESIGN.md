@@ -230,7 +230,10 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
       cho cả bố + mẹ; app đăng ký token theo **mã gia đình**. (đã test dry-run)
 - [x] **Geofence địa điểm an toàn** (nhà/trường): model + Haversine + quản lý địa điểm,
       gắn **tên nơi đỗ** vào cảnh báo/SMS. (logic đã kiểm chứng)
-- [ ] Học thói quen để giảm báo nhầm (chưa làm).
+- [x] **Học thói quen để giảm báo nhầm**: gom kết quả kết thúc chuyến theo ngữ cảnh
+      (nơi đỗ + thứ + khung giờ), điều chỉnh **thời gian xác nhận** trong khoảng an toàn
+      (nơi quen → dài hơn ↓báo nhầm; nơi từng leo thang → ngắn hơn ↑bảo vệ). **Không bao
+      giờ tắt chuông/gọi.** (logic đã kiểm chứng)
 - [ ] iOS: khai thác CarPlay/hands-free để cải thiện phát hiện kết thúc chuyến
       (hoãn — cần entitlement/thiết bị iOS).
 

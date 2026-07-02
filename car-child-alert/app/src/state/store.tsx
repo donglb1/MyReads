@@ -20,6 +20,7 @@ import {
   TripEndReason,
   Vehicle,
   emptyData,
+  defaultSettings,
 } from '@/models';
 import { loadData, saveData, newId } from '@/services/storage';
 import { AlertEngine, EngineState } from '@/services/alertEngine';
@@ -33,13 +34,23 @@ import {
   pushLocalNotification,
   getExpoPushToken,
 } from '@/services/notifier';
-import { placeLabelFor } from '@/services/geofence';
+import { placeLabelFor, findPlace } from '@/services/geofence';
+import {
+  contextKey,
+  adjustConfirmSeconds,
+  recordOutcome,
+  isRoutine,
+} from '@/services/habitModel';
 
 interface StoreValue {
   data: AppData;
   ready: boolean;
   engineState: EngineState;
   activeTrip: Trip | null;
+  /** Thời gian xác nhận (giây) hiệu lực cho lần cảnh báo hiện tại. */
+  confirmSeconds: number;
+  /** Ngữ cảnh hiện tại có "quen thuộc" (để hiện gợi ý) không. */
+  isRoutineContext: boolean;
   // Hồ sơ
   addChild: (c: Omit<Child, 'id'>) => void;
   removeChild: (id: string) => void;
@@ -66,6 +77,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [engineState, setEngineState] = useState<EngineState>('idle');
   const [activeTrip, setActiveTrip] = useState<Trip | null>(null);
+  // Thời gian xác nhận hiệu lực (đã áp học thói quen) + gợi ý ngữ cảnh quen thuộc.
+  const [confirmSeconds, setConfirmSeconds] = useState<number>(defaultSettings.t1Seconds);
+  const [isRoutineContext, setIsRoutineContext] = useState(false);
 
   // Dùng ref để hooks của engine luôn thấy dữ liệu mới nhất mà không tạo lại engine.
   const dataRef = useRef(data);
@@ -81,6 +95,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const engineRef = useRef<AlertEngine | null>(null);
   const pushTokenRef = useRef<string | undefined>(undefined);
+  // Khoá ngữ cảnh của lần cảnh báo hiện tại (để ghi nhận thói quen khi kết thúc).
+  const currentContextRef = useRef<string | null>(null);
+  // Đảm bảo mỗi chuyến chỉ ghi nhận thói quen một lần.
+  const outcomeRecordedRef = useRef(false);
+  // Ref tới hàm ghi thói quen, để engine (khởi tạo sớm) gọi được hàm định nghĩa sau.
+  const recordHabitRef = useRef<((o: 'ack' | 'escalation') => void) | null>(null);
 
   const persist = useCallback((updater: (d: AppData) => AppData) => {
     setData((prev) => {
@@ -136,6 +156,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           recordAlert(level, location);
           // Ngay khi bắt đầu báo động, báo cho các thiết bị khác trong gia đình (bố + mẹ).
           if (level === 'alarm_local') {
+            // Leo thang tới báo động = ngữ cảnh "rủi ro" cho học thói quen.
+            recordHabitRef.current?.('escalation');
             const familyId = dataRef.current.settings.familyId;
             if (familyId) {
               const label = placeLabelFor(location, dataRef.current.places);
@@ -198,18 +220,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [ready, data.settings.autoDetect]);
 
-  const beginConfirm = useCallback(
-    (reason: TripEndReason) => {
-      const trip = activeTripRef.current;
-      if (!trip) return;
-      // Đóng thời điểm kết thúc chuyến.
+  // Ghi nhận kết quả một lần kết thúc chuyến vào model thói quen (chỉ 1 lần/chuyến).
+  const recordHabit = useCallback(
+    (outcome: 'ack' | 'escalation') => {
+      if (outcomeRecordedRef.current) return;
+      if (!dataRef.current.settings.adaptiveConfirm) return;
+      const key = currentContextRef.current;
+      if (!key) return;
+      outcomeRecordedRef.current = true;
       persist((d) => ({
         ...d,
-        trips: d.trips.map((t) =>
+        habits: { ...d.habits, [key]: recordOutcome(d.habits[key], outcome) },
+      }));
+    },
+    [persist],
+  );
+  recordHabitRef.current = recordHabit;
+
+  const beginConfirm = useCallback(
+    async (reason: TripEndReason) => {
+      const trip = activeTripRef.current;
+      if (!trip) return;
+      const d = dataRef.current;
+      // Đóng thời điểm kết thúc chuyến.
+      persist((prev) => ({
+        ...prev,
+        trips: prev.trips.map((t) =>
           t.id === trip.id ? { ...t, endedAt: Date.now(), endReason: reason } : t,
         ),
       }));
-      engine.armConfirm(dataRef.current.contacts);
+
+      // Xác định ngữ cảnh (nơi đỗ + giờ) và áp học thói quen để tính thời gian xác nhận.
+      const location = d.settings.attachLocation ? await getCurrentLocation() : undefined;
+      const place = findPlace(location, d.places);
+      const key = contextKey(place?.id, new Date());
+      const stat = d.habits[key];
+      const base = d.settings.t1Seconds;
+      const seconds = d.settings.adaptiveConfirm ? adjustConfirmSeconds(base, stat) : base;
+
+      currentContextRef.current = key;
+      outcomeRecordedRef.current = false;
+      setConfirmSeconds(seconds);
+      setIsRoutineContext(d.settings.adaptiveConfirm && isRoutine(stat));
+
+      engine.armConfirm(dataRef.current.contacts, { confirmSeconds: seconds, location });
     },
     [engine, persist],
   );
@@ -241,9 +295,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const acknowledge = useCallback(() => {
+    // Xác nhận ngay ở bước hỏi = ngữ cảnh "quen thuộc" cho học thói quen.
+    if (engine.getState() === 'confirming') recordHabit('ack');
     engine.acknowledge();
     setTrip(null);
-  }, [engine, setTrip]);
+  }, [engine, setTrip, recordHabit]);
 
   const value = useMemo<StoreValue>(
     () => ({
@@ -251,6 +307,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ready,
       engineState,
       activeTrip,
+      confirmSeconds,
+      isRoutineContext,
       addChild: (c) => persist((d) => ({ ...d, children: [...d.children, { ...c, id: newId() }] })),
       removeChild: (id) =>
         persist((d) => ({ ...d, children: d.children.filter((x) => x.id !== id) })),
@@ -290,6 +348,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ready,
       engineState,
       activeTrip,
+      confirmSeconds,
+      isRoutineContext,
       persist,
       startTrip,
       endTripManually,
