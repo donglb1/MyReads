@@ -239,63 +239,62 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
       cần **dev build + native module** để chạy thật, no-op an toàn trong Expo Go.
 - [ ] iOS CarPlay UI: bỏ (không phù hợp danh mục entitlement của Apple).
 
-**Phase 3 — Phần cứng (phác thảo):**
+**Phase 3 — Khai thác cảm biến/dữ liệu có sẵn trên xe (phác thảo):**
 
-Mục tiêu: chuyển từ **suy luận gián tiếp** (điện thoại) sang **biết chắc có bé trên xe**
-bằng cảm biến, để gần như **không bỏ sót** và **giảm mạnh báo nhầm**, đồng thời **cảnh báo
-độc lập** kể cả khi điện thoại ở xa.
+> **Tiền đề:** KHÔNG thêm thiết bị cảm biến mới. Chỉ dùng **cảm biến & dữ liệu xe đã có
+> sẵn** (trạng thái máy, cửa, đai an toàn, chiếm chỗ ghế, nhiệt độ cabin, khoá xe...),
+> truy cập qua cổng/kênh sẵn có. Cách này rẻ, không phải lắp đặt, nhưng phụ thuộc **xe hỗ
+> trợ tới đâu** và **kênh nào đọc được dữ liệu**.
 
-**3.0. Chốt phương án cảm biến (quyết định nền tảng)**
-- [ ] So sánh & chọn cách phát hiện có bé:
-  - **Radar mmWave trong cabin** (vd LD2410/60GHz): nhận cả bé đang ngủ qua vi chuyển động/nhịp
-    thở — độ tin cậy cao nhất, đúng hướng quy định xe mới (EU/US). Phức tạp & đắt hơn.
-  - **Cảm biến chiếm chỗ ghế**: trọng lượng (FSR/load cell) hoặc điện dung — rẻ, nhưng dễ nhầm
-    với túi đồ; cần hiệu chỉnh.
-  - **Khoá đai an toàn (buckle sensor) + BLE**: biết bé đã cài đai; đơn giản, chi phí thấp.
-  - **Thẻ/beacon BLE gắn ghế trẻ**: rẻ nhất nhưng chỉ biết "ghế/thẻ ở đó", không chắc có bé.
-- [ ] Chọn tổ hợp: khuyến nghị **radar hoặc cảm biến chiếm chỗ** (biết có bé) **+ nhiệt độ**.
+**3.0. Chọn kênh truy cập dữ liệu xe (quyết định nền tảng)**
+- [ ] **OBD-II dongle Bluetooth (ELM327)** cắm cổng OBD: đọc CAN — trạng thái máy (RPM/ignition),
+      và tuỳ hãng: cửa, đai an toàn qua PID riêng. Rẻ, phổ biến, nhưng PID khác nhau theo hãng.
+- [ ] **API xe kết nối (connected-car)**: qua **aggregator như Smartcar** hoặc API hãng
+      (VinFast/Tesla/Hyundai Bluelink/Toyota...). Đọc trạng thái cửa, khoá, vị trí, nhiệt độ
+      cabin (tuỳ hãng) từ đám mây — không cần thiết bị cắm. Cần OAuth tài khoản xe, phủ theo hãng.
+- [ ] **Hệ thống sẵn có của xe**: "Rear Seat Reminder" (nhắc ghế sau dựa trên logic cửa) hoặc
+      **phát hiện người trong cabin** (radar/camera) trên xe đời mới — dùng trực tiếp **nếu hãng
+      cho phép đọc**.
+- [ ] Chọn kênh chính + dự phòng theo mức phủ hãng xe ở Việt Nam.
 
-**3.1. Thiết kế thiết bị (hardware)**
-- [ ] Vi điều khiển: **ESP32** (BLE + WiFi) hoặc nRF52; cân nhắc **module cellular (SIM)** để
-      cảnh báo độc lập khi điện thoại ra khỏi tầm.
-- [ ] Cảm biến: chiếm chỗ/ radar + **nhiệt độ** (SHT/DS18B20), tuỳ chọn **CO₂** (SCD40),
-      **chuyển động** (PIR/mmWave).
-- [ ] Nguồn: pin sạc + nguồn xe (USB/OBD-II/12V), chế độ ngủ sâu, **wake khi có chuyển động**.
-- [ ] Còi báo động tại chỗ (buzzer to) + đèn — hoạt động **không phụ thuộc điện thoại**.
-- [ ] Vỏ, cách gắn (ghế/táp-lô), chịu nhiệt độ cabin (−10…70°C).
+**3.1. Dữ liệu xe khả dụng & ánh xạ tín hiệu**
+- [ ] Liệt kê theo từng kênh/hãng: `ignition/engine`, `door_open` (từng cửa), `lock_state`,
+      `seatbelt`, `seat_occupancy` (thường chỉ ghế phụ trước), `cabin_temperature`, `gear`,
+      `location`, và `in-cabin presence` (nếu có).
+- [ ] Xác định tín hiệu nào **đáng tin để phát hiện có bé** vs chỉ dùng để **suy luận** (nhiều
+      xe KHÔNG có cảm biến chiếm chỗ ghế sau → phải dùng logic cửa).
 
-**3.2. Firmware**
-- [ ] Máy trạng thái: (xe tắt máy / dừng) + (có bé) + (không có người lớn) → báo động leo thang.
-- [ ] Định nghĩa **BLE GATT service** (đặc tính: `presence`, `weight`, `temperature`,
-      `battery`, `alarmState`); chuẩn hoá để app đọc.
-- [ ] Ngưỡng an toàn theo **nhiệt độ** (nhiệt tăng nhanh → rút ngắn thời gian, báo sớm).
-- [ ] **OTA update** firmware; nhật ký sự cố.
-- [ ] Đường cảnh báo độc lập qua cellular (SMS/HTTP) khi mất BLE.
+**3.2. Logic phát hiện dựa trên dữ liệu sẵn có (không có cảm biến ghế sau)**
+- [ ] **Mẫu "Rear Seat Reminder"** thuần logic cửa: nếu **cửa sau được mở** trước chuyến →
+      "có thể đã đặt bé phía sau"; khi **kết thúc chuyến** (tắt máy + mở cửa lái) mà **cửa sau
+      chưa mở lại** → **nhắc kiểm tra ghế sau**.
+- [ ] Dùng **nhiệt độ cabin** (từ xe) để chỉnh độ khẩn (nhiệt tăng nhanh → báo sớm hơn).
+- [ ] Nếu xe **có cảm biến chiếm chỗ / phát hiện người** và đọc được → dùng làm tín hiệu
+      **chắc chắn** (leo thang mạnh, ít báo nhầm).
 
-**3.3. Tích hợp app (đã có sẵn điểm cắm)**
-- [ ] Model `SensorDevice` (bleId, firmware, pin) + luồng **ghép đôi (pairing)** trong app.
-- [ ] Service `hardwareSensor.ts` đọc BLE GATT → cấp tín hiệu **"có bé chắc chắn"** cho hệ thống.
-- [ ] Mở rộng `alertEngine`: khi **biết có bé** → leo thang **mạnh & sớm hơn**; khi **chắc chắn
-      không có bé** → **bỏ qua** chu trình (giảm báo nhầm) — an toàn vì dựa trên cảm biến thật.
-- [ ] Màn hình **trạng thái thiết bị** (pin, kết nối, nhiệt độ) + cảnh báo pin yếu/mất kết nối.
-- [ ] `tripDetector` nhận thêm nguồn tín hiệu phần cứng (kiến trúc hiện tại đã hỗ trợ cắm thêm).
+**3.3. Tích hợp (kiến trúc hiện tại đã sẵn điểm cắm)**
+- [ ] **App:** service `obdReader.ts` (BLE tới ELM327) đọc trạng thái máy/cửa → nối vào
+      `tripDetector` như một nguồn tín hiệu mới (giống Bluetooth/iOS motion, guard an toàn).
+- [ ] **Server:** tích hợp OAuth + đọc trạng thái xe qua **Smartcar/API hãng** (webhook hoặc
+      polling), đẩy sự kiện "tắt máy/đỗ" và nhiệt độ về app.
+- [ ] Mở rộng `alertEngine`: nhận cờ **"nghi có bé ở ghế sau"** (từ logic cửa) và **nhiệt độ**
+      để chỉnh thời gian/độ khẩn; giữ nguyên nguyên tắc **không bỏ sót**.
+- [ ] Màn hình **kết nối xe** (ghép OBD dongle / đăng nhập tài khoản xe) + trạng thái dữ liệu.
 
-**3.4. Kiểm thử & an toàn**
-- [ ] Thử nghiệm thực địa: tỉ lệ **bỏ sót = 0**, đo tỉ lệ **báo nhầm**.
-- [ ] Thử trong **buồng nhiệt** (mô phỏng xe nắng nóng), thử mất điện/mất sóng.
-- [ ] Kịch bản pin điện thoại hết / thiết bị hết pin.
+**3.4. Hạn chế & an toàn (quan trọng với tiền đề này)**
+- [ ] Đa số xe **không expose cảm biến ghế sau** → logic cửa chỉ là **NHẮC**, không phải phát
+      hiện chắc chắn → luôn **thiên về cảnh báo** (thà nhắc còn hơn bỏ sót).
+- [ ] **Độ trễ/độ phủ:** API hãng có độ trễ & chỉ hỗ trợ một số hãng; PID OBD khác nhau.
+- [ ] **Nguồn điện:** dongle OBD cắm liên tục có thể hao ắc-quy khi xe tắt máy lâu.
+- [ ] **Bảo mật/riêng tư:** token OAuth tài khoản xe và dữ liệu vị trí phải được bảo vệ.
 
-**3.5. Pháp lý & chứng nhận**
-- [ ] Chứng nhận vô tuyến/EMC: **FCC/CE** và **MIC (Việt Nam)**; an toàn ô tô.
-- [ ] Tuân thủ quy định nhắc-trẻ-trên-xe (tham chiếu quy định xe mới EU/US).
-- [ ] Quyền riêng tư dữ liệu cảm biến/vị trí.
+**3.5. Kiểm thử**
+- [ ] Thử theo **từng hãng xe** (độ phủ tín hiệu khác nhau) và **từng loại dongle** OBD.
+- [ ] Kịch bản mất kết nối OBD/API, xe tắt máy lâu, nhiều cửa mở/đóng.
 
-**3.6. Sản xuất**
-- [ ] Prototype breadboard (ESP32 + cảm biến) → PCB → vỏ → thử nghiệm nhỏ (pilot).
-- [ ] Định giá linh kiện (BOM), kế hoạch sản xuất hàng loạt.
-
-> Ghi chú: đây là **kế hoạch/phác thảo** cho Phase 3; phần này cần **kỹ thuật phần cứng, linh
-> kiện thật và kiểm thử vật lý**, không thực hiện được chỉ bằng code trong phiên hiện tại.
+> Ghi chú: đây là **kế hoạch/phác thảo**. Phần code-được-ngay là **app**: `obdReader.ts`
+> (mock BLE để test) và cờ "nghi có bé ghế sau" cho `alertEngine`. Phần API hãng cần **tài
+> khoản xe kết nối + phủ hãng**, và OBD cần **dongle thật + xe** để kiểm thử.
 
 ---
 
