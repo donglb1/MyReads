@@ -90,8 +90,23 @@ Sau đó vào **Cài đặt → Xe**, nhập **tên/địa chỉ Bluetooth** c�
 hoặc `00:11:22:33:44:55`) để app biết thiết bị nào là xe.
 
 - **Android:** nghe sự kiện kết nối/ngắt Bluetooth Classic (rảnh tay) của xe.
-- **iOS:** hệ điều hành không cho app thấy kết nối/ngắt của loa xe thường (giới hạn MFi),
-  nên iOS tự động dựa trên **tốc độ GPS** (đang lái → dừng hẳn). Vẫn dùng được nút mô phỏng.
+- **iOS:** hệ điều hành không cho app thấy kết nối/ngắt của loa xe thường (giới hạn MFi).
+  Thay vào đó iOS dùng **`iosMotionDetector`** (Core Motion *automotive* + Visits) để phát
+  hiện "vừa xuống xe" — **không cần CarPlay entitlement** — cộng **tốc độ GPS** và nút mô
+  phỏng. Phần Core Motion/Visits cần **dev build + native module** (xem dưới); nếu không có,
+  tự bỏ qua an toàn.
+
+### iOS: Core Motion + Visits (thay cho CarPlay)
+
+`src/services/iosMotionDetector.ts` phát hiện kết thúc chuyến bằng API iOS gốc:
+- **Core Motion** (`CMMotionActivityManager`): `automotive → stationary/walking` = xuống xe.
+- **Visits** (`startMonitoringVisits`): xác nhận "vừa đỗ tại một nơi".
+
+Cần **dev build** và một **native module** cầu nối Core Motion/Visits sang JS (interface kỳ
+vọng ghi trong đầu file `iosMotionDetector.ts`). Quyền: **Motion & Fitness** + **Location
+(Always)** — đã khai báo trong `app.json` (`NSMotionUsageDescription`, background location).
+Lưu ý: các tín hiệu này có **độ trễ** (Core Motion vài chục giây; Visits vài phút) nên dùng
+kèm GPS + nút thủ công; đáng tin cậy nhất vẫn là phần cứng (Phase 3).
 - Nếu chạy trong Expo Go (không có module), phần Bluetooth **tự bỏ qua an toàn**, app vẫn
   chạy bình thường với GPS/activity + mô phỏng.
 

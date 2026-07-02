@@ -234,8 +234,10 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
       (nơi đỗ + thứ + khung giờ), điều chỉnh **thời gian xác nhận** trong khoảng an toàn
       (nơi quen → dài hơn ↓báo nhầm; nơi từng leo thang → ngắn hơn ↑bảo vệ). **Không bao
       giờ tắt chuông/gọi.** (logic đã kiểm chứng)
-- [ ] iOS: khai thác CarPlay/hands-free để cải thiện phát hiện kết thúc chuyến
-      (hoãn — cần entitlement/thiết bị iOS).
+- [x] iOS: phát hiện kết thúc chuyến bằng **Core Motion (automotive) + Visits**
+      (`iosMotionDetector`, không cần CarPlay entitlement). Đã nối vào `tripDetector`;
+      cần **dev build + native module** để chạy thật, no-op an toàn trong Expo Go.
+- [ ] iOS CarPlay UI: bỏ (không phù hợp danh mục entitlement của Apple).
 
 **Phase 3 — Phần cứng:**
 - [ ] Thẻ BLE gắn ghế trẻ / cảm biến trọng lượng.

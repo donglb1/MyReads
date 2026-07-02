@@ -77,6 +77,22 @@ export class TripDetector {
     if (!this.tripActive) this.emit({ type: 'start' });
   }
 
+  // ---- iOS Core Motion / Visits (khung tích hợp, xem iosMotionDetector) ----
+  /** Core Motion báo bắt đầu trạng thái "đi ô tô" → bắt đầu chuyến. */
+  onMotionAutomotiveStart(): void {
+    if (!this.tripActive) this.emit({ type: 'start' });
+  }
+
+  /** Core Motion báo chuyển từ "đi ô tô" sang đứng yên/đi bộ → kết thúc chuyến. */
+  onMotionStopped(): void {
+    if (this.tripActive) this.emit({ type: 'end', reason: 'activity' });
+  }
+
+  /** Visits API báo vừa "đến/đỗ" tại một nơi → xác nhận kết thúc chuyến. */
+  onVisitArrival(): void {
+    if (this.tripActive) this.emit({ type: 'end', reason: 'activity' });
+  }
+
   // ---- Tự động theo activity/tốc độ ----
   async enableAutoDetect(): Promise<boolean> {
     if (this.autoEnabled) return true;

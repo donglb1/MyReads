@@ -26,6 +26,7 @@ import { loadData, saveData, newId } from '@/services/storage';
 import { AlertEngine, EngineState } from '@/services/alertEngine';
 import { tripDetector } from '@/services/tripDetector';
 import { startBluetoothDetection, stopBluetoothDetection } from '@/services/bluetoothClassic';
+import { startIosMotionDetection, stopIosMotionDetection } from '@/services/iosMotionDetector';
 import { contactService } from '@/services/contact';
 import { getCurrentLocation } from '@/services/location';
 import {
@@ -214,9 +215,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       startBluetoothDetection(() =>
         dataRef.current.vehicles.map((v) => v.bluetoothId ?? '').filter(Boolean),
       );
+      // iOS: Core Motion + Visits (cần dev build + native module); no-op an toàn nếu không có.
+      startIosMotionDetection();
     } else {
       tripDetector.disableAutoDetect();
       stopBluetoothDetection();
+      stopIosMotionDetection();
     }
   }, [ready, data.settings.autoDetect]);
 
