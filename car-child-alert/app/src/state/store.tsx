@@ -276,8 +276,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ),
       }));
 
-      // Xác định ngữ cảnh (nơi đỗ + giờ) và áp học thói quen để tính thời gian xác nhận.
-      const location = d.settings.attachLocation ? await getCurrentLocation() : undefined;
+      // Lấy vị trí + trạng thái xe (best-effort) song song.
+      const [phoneLoc, vehicleState] = await Promise.all([
+        d.settings.attachLocation ? getCurrentLocation() : Promise.resolve(undefined),
+        d.settings.familyId && contactService.hasBackend()
+          ? contactService.getVehicleState(d.settings.familyId)
+          : Promise.resolve(null),
+      ]);
+      // Vị trí điện thoại ưu tiên; nếu không có thì dùng vị trí xe từ Smartcar.
+      const location = phoneLoc ?? vehicleState?.location;
+      // Nhiệt độ cabin: ưu tiên OBD, sau đó tới API xe.
+      const cabinTemp = cabinTempRef.current ?? vehicleState?.cabinTempC;
       const place = findPlace(location, d.places);
       const key = contextKey(place?.id, new Date());
       const stat = d.habits[key];
@@ -294,7 +303,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const suspect = assessment.level !== 'low';
       // Nghi có bé → KHÔNG nới dài xác nhận; nhiệt độ nóng → rút ngắn thêm.
       if (suspect) seconds = Math.min(seconds, base);
-      seconds = confirmCapForTemp(seconds, cabinTempRef.current);
+      seconds = confirmCapForTemp(seconds, cabinTemp);
 
       currentContextRef.current = key;
       outcomeRecordedRef.current = false;

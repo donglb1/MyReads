@@ -134,9 +134,17 @@ app.post('/vehicle/exchange', auth, async (req, res) => {
 app.get('/vehicle/state', auth, async (req, res) => {
   const familyId = req.query.familyId;
   if (!familyId) return res.status(400).json({ ok: false, error: 'thiếu familyId' });
-  const token = getToken(familyId);
+  let token = getToken(familyId);
   if (!token) return res.status(404).json({ ok: false, error: 'chưa liên kết xe' });
   try {
+    // Tự làm mới token nếu đã hết hạn và provider hỗ trợ.
+    if (token.expiration && Date.now() > token.expiration && vehicle.refresh) {
+      const refreshed = await vehicle.refresh(token);
+      if (refreshed) {
+        token = refreshed;
+        saveToken(familyId, token);
+      }
+    }
     const state = await vehicle.getState(token.accessToken, token.vehicleId);
     res.json({ ok: true, ...state });
   } catch (e) {

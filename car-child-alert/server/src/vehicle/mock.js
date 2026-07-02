@@ -13,6 +13,9 @@ function createMockVehicleProvider() {
         expiration: Date.now() + 3600_000,
       };
     },
+    async refresh(token) {
+      return { ...token, accessToken: 'mock-access-2', expiration: Date.now() + 3600_000 };
+    },
     async getState(_token, _vehicleId) {
       return {
         provider: 'mock',

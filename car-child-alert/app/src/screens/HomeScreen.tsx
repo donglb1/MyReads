@@ -68,7 +68,8 @@ export default function HomeScreen() {
           <Button label="🔒 Mô phỏng cài đai ghế sau" variant="ghost" onPress={() => obdReader.simulateRearSeatbelt(true)} />
           <Button label="🌡️ Mô phỏng cabin 40°C (nóng)" variant="ghost" onPress={() => obdReader.simulateCabinTemp(40)} />
           <Button label="🔌 Mô phỏng tắt máy (đỗ xe)" variant="danger" onPress={() => obdReader.simulateEngine(false)} />
-          <Button label="🚶 Mô phỏng tài xế rời xe" variant="ghost" onPress={() => driverAwayDetector.simulateDriverAway()} />
+          <Button label="🚶 Mô phỏng tài xế rời xe (bước chân)" variant="ghost" onPress={() => driverAwayDetector.simulateDriverAway()} />
+          <Button label="📶 Mô phỏng rời xa xe (RSSI)" variant="ghost" onPress={() => obdReader.simulateMovingAway()} />
         </Card>
 
         <Text style={styles.tip}>

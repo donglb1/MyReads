@@ -292,9 +292,14 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
       `/vehicle/exchange`, `/vehicle/state` (vị trí/odometer/khoá; provider `mock` để test —
       đã PASS). Lưu ý: Smartcar KHÔNG cấp sự kiện cửa/đai/chiếm chỗ → bổ trợ ngữ cảnh, còn
       phát hiện kết thúc chuyến vẫn dựa OBD.
-- [ ] Hoàn thiện parse CAN theo hãng trong `obdReader` (cần dongle thật để hiệu chỉnh PID).
-- [ ] RSSI thật từ lớp BLE (hiện có hook + mô phỏng); refresh token Smartcar.
-- [ ] Màn hình **kết nối xe** (ghép OBD dongle / đăng nhập tài khoản xe) + trạng thái dữ liệu.
+- [x] **Màn hình Kết nối xe** (`VehicleScreen`, tab "Xe"): lấy link liên kết Smartcar, đổi
+      code, đọc trạng thái xe; hướng dẫn ghép OBD dongle.
+- [x] App **đọc `/vehicle/state`**: dùng **nhiệt độ cabin** (ưu tiên OBD, fallback Smartcar) và
+      **vị trí xe** (fallback khi thiếu GPS điện thoại) trong `beginConfirm`.
+- [x] **RSSI**: `obdReader.onCarRssi()` → khi rời xa xe gọi `driverAwayDetector` (có mô phỏng).
+- [x] **Bảo mật/refresh:** token xe **mã hoá AES-256-GCM** khi lưu; **tự refresh** token
+      Smartcar khi hết hạn (đã test bằng mock).
+- [ ] Hoàn thiện **parse CAN theo hãng** trong `obdReader` + **đọc RSSI BLE thật** (cần dongle).
 
 **3.4. Hạn chế & an toàn (quan trọng với tiền đề này)**
 - [ ] Đa số xe **không expose cảm biến ghế sau** → logic cửa chỉ là **NHẮC**, không phải phát

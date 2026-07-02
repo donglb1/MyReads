@@ -12,6 +12,7 @@ import HomeScreen from '@/screens/HomeScreen';
 import ContactsScreen from '@/screens/ContactsScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import HistoryScreen from '@/screens/HistoryScreen';
+import VehicleScreen from '@/screens/VehicleScreen';
 import AlertOverlay from '@/screens/AlertOverlay';
 
 const Tab = createBottomTabNavigator();
@@ -67,6 +68,11 @@ function Main() {
             name="Liên hệ"
             component={ContactsScreen}
             options={{ tabBarIcon: ({ color }) => <TabIcon label="📞" color={color} /> }}
+          />
+          <Tab.Screen
+            name="Xe"
+            component={VehicleScreen}
+            options={{ tabBarIcon: ({ color }) => <TabIcon label="🚙" color={color} /> }}
           />
           <Tab.Screen
             name="Nhật ký"

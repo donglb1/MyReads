@@ -8,6 +8,8 @@ process.env.API_KEY = 'test-key';
 process.env.PUSH_DRY_RUN = 'true';
 // Dùng file tạm để không đụng dữ liệu thật.
 process.env.FAMILY_STORE = path.join(os.tmpdir(), `antoanbe-families-${Date.now()}.json`);
+process.env.VEHICLE_STORE = path.join(os.tmpdir(), `antoanbe-vehicles-${Date.now()}.json`);
+process.env.TOKEN_ENC_KEY = 'test-secret-key';
 
 const app = require('../src/index');
 
@@ -111,6 +113,18 @@ async function run() {
     r = await fetch(`${base}/vehicle/state?familyId=fam1`, { headers: authHeaders });
     j = await r.json();
     check(r.status === 200 && !!j.location && j.cabinTempC === 33, 'GET /vehicle/state -> có vị trí + nhiệt độ');
+
+    // Token phải được mã hoá trên đĩa (không thấy accessToken thô).
+    const fs = require('fs');
+    const raw = fs.readFileSync(process.env.VEHICLE_STORE, 'utf8');
+    check(!raw.includes('mock-access') && raw.includes('_enc'), 'token lưu ở dạng mã hoá');
+
+    // Refresh: đặt token hết hạn rồi gọi state → vẫn ok (đã tự refresh).
+    const { saveToken, getToken } = require('../src/vehicle/tokenStore');
+    saveToken('fam1', { accessToken: 'mock-access', refreshToken: 'r', vehicleId: 'mock-vehicle', expiration: Date.now() - 1000 });
+    r = await fetch(`${base}/vehicle/state?familyId=fam1`, { headers: authHeaders });
+    check(r.status === 200, 'GET /vehicle/state khi token hết hạn -> tự refresh OK');
+    check(getToken('fam1').accessToken === 'mock-access-2', 'token đã được refresh & lưu lại');
   } finally {
     server.close();
   }

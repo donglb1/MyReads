@@ -126,6 +126,11 @@ kèm GPS + nút thủ công; đáng tin cậy nhất vẫn là phần cứng (Ph
 Đồng bộ đa thiết bị dùng **Expo push** qua backend (`../server/`: `/register`,
 `/notify-family`). Push token lấy tự động khi có mã gia đình + backend đã cấu hình.
 
+- **Kết nối xe (tab "Xe"):** liên kết tài khoản xe qua **Smartcar** (lấy link → dán code →
+  đọc trạng thái) và hướng dẫn ghép **OBD dongle**. App đọc `/vehicle/state` để lấy **nhiệt
+  độ cabin** (ưu tiên OBD, fallback Smartcar) và **vị trí xe** (fallback khi thiếu GPS), đưa
+  vào đánh giá cảnh báo. Token xe được **mã hoá** và **tự refresh** ở server.
+
 ## Phase 3 (bắt đầu) — dùng dữ liệu sẵn có của xe
 
 Không thêm cảm biến mới; đọc trạng thái xe qua **OBD-II dongle Bluetooth (ELM327)**:

@@ -35,6 +35,16 @@ function createSmartcarProvider(env) {
         vehicleId: vehicles[0],
       };
     },
+    async refresh(token) {
+      if (!token.refreshToken) return null;
+      const access = await client.exchangeRefreshToken(token.refreshToken);
+      return {
+        ...token,
+        accessToken: access.accessToken,
+        refreshToken: access.refreshToken,
+        expiration: access.expiration,
+      };
+    },
     async getState(token, vehicleId) {
       const v = new smartcar.Vehicle(vehicleId, token);
       const state = { provider: 'smartcar' };

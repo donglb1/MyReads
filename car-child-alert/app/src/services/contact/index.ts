@@ -72,6 +72,44 @@ class ContactService {
     return this.postBackend('/notify-family', { familyId, title, body, excludeToken });
   }
 
+  private async getBackend(path: string, timeoutMs = 2500): Promise<any | null> {
+    const cfg = this.backendConfig;
+    if (!cfg?.baseUrl) return null;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      const res = await fetch(`${cfg.baseUrl}${path}`, {
+        headers: cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {},
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      console.warn('[contactService] getBackend lỗi:', e);
+      return null;
+    }
+  }
+
+  // ---- Dữ liệu xe kết nối (Smartcar qua server) ----
+  async getVehicleAuthUrl(): Promise<string | null> {
+    const j = await this.getBackend('/vehicle/auth-url');
+    return j?.url ?? null;
+  }
+
+  async exchangeVehicleCode(familyId: string, code: string): Promise<boolean> {
+    if (!familyId || !code) return false;
+    return this.postBackend('/vehicle/exchange', { familyId, code });
+  }
+
+  /** Trả về trạng thái xe: { location?, cabinTempC?, odometerKm?, locked? } hoặc null. */
+  async getVehicleState(
+    familyId: string,
+  ): Promise<{ location?: GeoPoint; cabinTempC?: number; odometerKm?: number; locked?: boolean } | null> {
+    if (!familyId) return null;
+    return this.getBackend(`/vehicle/state?familyId=${encodeURIComponent(familyId)}`);
+  }
+
   setProvider(kind: ProviderKind): void {
     this.active = kind;
   }

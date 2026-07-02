@@ -14,6 +14,10 @@
  * nên dùng dongle có chế độ ngủ/ngắt.
  */
 import { tripDetector } from './tripDetector';
+import { driverAwayDetector } from './driverAwayDetector';
+
+// Ngưỡng RSSI (dBm) coi là "điện thoại đã rời xa xe".
+const RSSI_AWAY_THRESHOLD = -85;
 
 export type VehicleEvent =
   | { type: 'engine'; on: boolean }
@@ -97,6 +101,19 @@ class ObdReader {
 
   simulateCabinTemp(celsius: number): void {
     this.emit({ type: 'temp', celsius });
+  }
+
+  /**
+   * Cập nhật RSSI đo được tới thiết bị xe (từ lớp BLE). Nếu yếu hơn ngưỡng ⇒ điện thoại
+   * đang rời xa xe ⇒ báo cho driverAwayDetector (leo thang sớm nếu nghi còn bé).
+   */
+  onCarRssi(rssi: number): void {
+    if (rssi <= RSSI_AWAY_THRESHOLD) driverAwayDetector.onProximityAway();
+  }
+
+  /** Mô phỏng điện thoại rời xa xe theo RSSI (để test không cần đo BLE thật). */
+  simulateMovingAway(): void {
+    this.onCarRssi(-95);
   }
 }
 
