@@ -69,6 +69,17 @@ export interface Settings {
   alarmSound: boolean;
   /** Đính kèm vị trí GPS khi gửi cảnh báo. */
   attachLocation: boolean;
+  /** Mã gia đình (bố + mẹ nhập cùng mã để cùng nhận cảnh báo trên nhiều máy). */
+  familyId?: string;
+}
+
+/** Địa điểm an toàn (nhà/trường...) để gắn nhãn nơi đỗ xe. */
+export interface SafePlace {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
 }
 
 export interface AppData {
@@ -77,6 +88,7 @@ export interface AppData {
   contacts: Contact[];
   trips: Trip[];
   alerts: AlertEvent[];
+  places: SafePlace[];
   settings: Settings;
   onboarded: boolean;
 }
@@ -96,6 +108,7 @@ export const emptyData: AppData = {
   contacts: [],
   trips: [],
   alerts: [],
+  places: [],
   settings: defaultSettings,
   onboarded: false,
 };

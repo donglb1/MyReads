@@ -18,15 +18,58 @@ class ContactService {
   private mock = new MockProvider();
   private device = new DeviceProvider();
   private backend: BackendProvider | null = null;
+  private backendConfig: BackendConfig | null = null;
   private active: ProviderKind = 'mock';
 
   /** Đặt cấu hình backend. Truyền baseUrl rỗng để tắt backend. */
   configureBackend(config?: BackendConfig): void {
     if (config?.baseUrl) {
       this.backend = new BackendProvider(config);
+      this.backendConfig = config;
     } else {
       this.backend = null;
+      this.backendConfig = null;
     }
+  }
+
+  hasBackend(): boolean {
+    return !!this.backendConfig;
+  }
+
+  private async postBackend(path: string, body: unknown): Promise<boolean> {
+    const cfg = this.backendConfig;
+    if (!cfg?.baseUrl) return false;
+    try {
+      const res = await fetch(`${cfg.baseUrl}${path}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      return res.ok;
+    } catch (e) {
+      console.warn('[contactService] postBackend lỗi:', e);
+      return false;
+    }
+  }
+
+  /** Đăng ký thiết bị vào một gia đình để cùng nhận cảnh báo (bố + mẹ). */
+  async registerFamilyDevice(familyId: string, pushToken: string, deviceName: string): Promise<boolean> {
+    if (!familyId || !pushToken) return false;
+    return this.postBackend('/register', { familyId, pushToken, deviceName });
+  }
+
+  /** Báo cho các thiết bị khác trong gia đình khi có cảnh báo. */
+  async notifyFamily(
+    familyId: string,
+    title: string,
+    body: string,
+    excludeToken?: string,
+  ): Promise<boolean> {
+    if (!familyId) return false;
+    return this.postBackend('/notify-family', { familyId, title, body, excludeToken });
   }
 
   setProvider(kind: ProviderKind): void {
@@ -48,11 +91,14 @@ class ContactService {
     return this.mock.getLog();
   }
 
-  buildMessage(child: Child | undefined, location?: GeoPoint): string {
+  buildMessage(child: Child | undefined, location?: GeoPoint, placeLabel?: string): string {
     const who = child?.name ? `bé ${child.name}` : 'trẻ nhỏ';
     const link = mapsLink(location);
     const base = `⚠️ CẢNH BÁO AnToànBé: Có thể ${who} đang bị bỏ quên trong xe! Vui lòng kiểm tra NGAY.`;
-    return link ? `${base}\nVị trí xe: ${link}` : base;
+    const parts = [base];
+    if (placeLabel) parts.push(`Nơi đỗ: ${placeLabel}`);
+    if (link) parts.push(`Vị trí xe: ${link}`);
+    return parts.join('\n');
   }
 
   async call(contact: Contact, message: string, location?: GeoPoint): Promise<CallResult> {

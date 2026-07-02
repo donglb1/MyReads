@@ -1,6 +1,12 @@
-// Smoke test: chạy server với provider mock + API_KEY, kiểm tra /health, auth, /call, /sms.
+// Smoke test: chạy server với provider mock + API_KEY, kiểm tra /health, auth, /call, /sms,
+// và đồng bộ đa thiết bị (/register, /notify-family) ở chế độ dry-run.
+const os = require('os');
+const path = require('path');
 process.env.PROVIDER = 'mock';
 process.env.API_KEY = 'test-key';
+process.env.PUSH_DRY_RUN = 'true';
+// Dùng file tạm để không đụng dữ liệu thật.
+process.env.FAMILY_STORE = path.join(os.tmpdir(), `antoanbe-families-${Date.now()}.json`);
 
 const app = require('../src/index');
 
@@ -58,6 +64,35 @@ async function run() {
     });
     j = await r.json();
     check(r.status === 200 && j.ok === true, 'POST /sms hợp lệ -> ok');
+
+    // Đăng ký 2 thiết bị vào cùng gia đình.
+    const authHeaders = { 'Content-Type': 'application/json', Authorization: 'Bearer test-key' };
+    for (const [token, name] of [
+      ['ExponentPushToken[me]', 'Điện thoại Bố'],
+      ['ExponentPushToken[wife]', 'Điện thoại Mẹ'],
+    ]) {
+      r = await fetch(`${base}/register`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ familyId: 'fam1', pushToken: token, deviceName: name }),
+      });
+    }
+    j = await r.json();
+    check(r.status === 200 && j.devices === 2, 'POST /register -> gia đình có 2 thiết bị');
+
+    // notify-family loại trừ thiết bị gửi -> chỉ còn 1 thiết bị nhận.
+    r = await fetch(`${base}/notify-family`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({
+        familyId: 'fam1',
+        title: 'Cảnh báo bé trên xe',
+        body: 'Kiểm tra ngay',
+        excludeToken: 'ExponentPushToken[me]',
+      }),
+    });
+    j = await r.json();
+    check(r.status === 200 && j.sent === 1 && j.dryRun === true, 'POST /notify-family -> gửi 1 (loại trừ người gửi)');
   } finally {
     server.close();
   }

@@ -95,6 +95,35 @@ hoặc `00:11:22:33:44:55`) để app biết thiết bị nào là xe.
 - Nếu chạy trong Expo Go (không có module), phần Bluetooth **tự bỏ qua an toàn**, app vẫn
   chạy bình thường với GPS/activity + mô phỏng.
 
+## Phase 2 — Đồng bộ bố + mẹ & địa điểm an toàn
+
+- **Cảnh báo cả bố + mẹ:** vào **Cài đặt → Gia đình**, nhập **cùng một mã gia đình** trên
+  điện thoại của bố và mẹ. Khi một máy bắt đầu báo động, máy kia nhận **thông báo đẩy** ngay.
+  (Cần đã cấu hình backend — xem phần dưới.)
+- **Địa điểm an toàn:** vào **Cài đặt → Địa điểm an toàn**, đặt tên (Nhà/Trường) và lưu
+  vị trí hiện tại. Cảnh báo/SMS sẽ ghi **tên nơi đỗ** thay vì chỉ toạ độ.
+
+Đồng bộ đa thiết bị dùng **Expo push** qua backend (`../server/`: `/register`,
+`/notify-family`). Push token lấy tự động khi có mã gia đình + backend đã cấu hình.
+
+## ✅ Việc cần làm để Phase 1 chạy thật (bạn thực hiện)
+
+Phần code đã xong; các việc dưới đây cần tài nguyên/thiết bị của bạn:
+
+- [ ] **Cuộc gọi/SMS thật**
+  - [ ] Tạo tài khoản **Twilio** hoặc **Stringee**, lấy khoá + số gửi đi.
+  - [ ] Điền vào `../server/.env` (theo `.env.example`), đặt `PROVIDER=twilio|stringee`.
+  - [ ] **Deploy** `../server/` (Render / Railway / Fly / Cloud Run...), lấy URL công khai.
+  - [ ] Trong `src/state/store.tsx`: `contactService.configureBackend({ baseUrl, apiKey })`
+        và `contactService.setProvider('backend')`.
+- [ ] **Bluetooth xe thật (Android)**
+  - [ ] `npx expo prebuild && npx expo run:android` để tạo **dev build** (không dùng Expo Go).
+  - [ ] Ghép đôi điện thoại với Bluetooth xe, rồi vào **Cài đặt → Xe** nhập tên/địa chỉ BT.
+  - [ ] Thử một chuyến thật: lên xe (kết nối BT) → xuống xe (ngắt BT) để kiểm tra cảnh báo.
+- [ ] **Kiểm thử trên thiết bị thật**
+  - [ ] Chạy thử luồng cảnh báo end-to-end với số điện thoại thật (chỉnh T1/T2/T3 ngắn khi test).
+  - [ ] Kiểm tra hoạt động khi app chạy nền / màn hình khoá.
+
 ## Giới hạn hiện tại (Phase 1)
 
 - Provider gọi/SMS mặc định là **mock**. Để gọi/SMS thật: dựng & deploy `../server/`

@@ -3,6 +3,8 @@ const express = require('express');
 const { createMockProvider } = require('./providers/mock');
 const { createTwilioProvider } = require('./providers/twilio');
 const { createStringeeProvider } = require('./providers/stringee');
+const { registerDevice, getFamily, getTokens } = require('./family');
+const { sendPush } = require('./push');
 
 const PROVIDER = (process.env.PROVIDER || 'mock').toLowerCase();
 const PORT = Number(process.env.PORT || 3000);
@@ -59,6 +61,44 @@ app.post('/sms', auth, async (req, res) => {
     res.json(result);
   } catch (e) {
     console.error('[sms] lỗi:', e.message);
+    res.status(502).json({ ok: false, error: e.message });
+  }
+});
+
+// ---- Đồng bộ đa thiết bị (bố + mẹ cùng nhận cảnh báo) ----
+
+// Đăng ký token push của một thiết bị vào một "gia đình".
+app.post('/register', auth, (req, res) => {
+  const { familyId, pushToken, deviceName } = req.body || {};
+  if (!familyId || !pushToken) {
+    return res.status(400).json({ ok: false, error: 'thiếu familyId/pushToken' });
+  }
+  try {
+    const family = registerDevice(familyId, pushToken, deviceName);
+    res.json({ ok: true, devices: family.devices.length });
+  } catch (e) {
+    res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
+// Xem gia đình (debug).
+app.get('/family/:id', auth, (req, res) => {
+  const family = getFamily(req.params.id);
+  res.json({ ok: true, devices: family.devices.map((d) => ({ deviceName: d.deviceName })) });
+});
+
+// Gửi cảnh báo tới mọi thiết bị khác trong gia đình (loại trừ thiết bị gửi).
+app.post('/notify-family', auth, async (req, res) => {
+  const { familyId, title, body, excludeToken, data } = req.body || {};
+  if (!familyId || !title) {
+    return res.status(400).json({ ok: false, error: 'thiếu familyId/title' });
+  }
+  try {
+    const tokens = getTokens(familyId, excludeToken);
+    const result = await sendPush(tokens, { title, body: body || '', data }, process.env);
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    console.error('[notify-family] lỗi:', e.message);
     res.status(502).json({ ok: false, error: e.message });
   }
 });

@@ -225,10 +225,14 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
 > - Tạo **dev build** (`expo prebuild` / EAS dev client) để Bluetooth Classic hoạt động
 >   (không chạy trong Expo Go), và test trên **điện thoại Android + xe thật**.
 
-**Phase 2 — Nâng cấp thực địa:**
-- [ ] Backend đồng bộ nhiều thiết bị (bố + mẹ cùng nhận cảnh báo).
-- [ ] Tinh chỉnh geofence (nhà/trường), học thói quen để giảm báo nhầm.
-- [ ] iOS: khai thác CarPlay/hands-free để cải thiện phát hiện kết thúc chuyến.
+**Phase 2 — Nâng cấp thực địa (đang làm):**
+- [x] Backend đồng bộ nhiều thiết bị: `/register` + `/notify-family` gửi **push (Expo)**
+      cho cả bố + mẹ; app đăng ký token theo **mã gia đình**. (đã test dry-run)
+- [x] **Geofence địa điểm an toàn** (nhà/trường): model + Haversine + quản lý địa điểm,
+      gắn **tên nơi đỗ** vào cảnh báo/SMS. (logic đã kiểm chứng)
+- [ ] Học thói quen để giảm báo nhầm (chưa làm).
+- [ ] iOS: khai thác CarPlay/hands-free để cải thiện phát hiện kết thúc chuyến
+      (hoãn — cần entitlement/thiết bị iOS).
 
 **Phase 3 — Phần cứng:**
 - [ ] Thẻ BLE gắn ghế trẻ / cảm biến trọng lượng.

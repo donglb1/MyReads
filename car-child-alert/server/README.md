@@ -23,12 +23,18 @@ npm test                  # smoke test với provider mock
 Tất cả yêu cầu cần header `Authorization: Bearer <API_KEY>` (nếu đặt `API_KEY`).
 
 ```
-GET  /health           -> { ok, provider }
-POST /call  { to, message, name?, location? }  -> { ok, id }
-POST /sms   { to, message, name?, location? }  -> { ok, id }
+GET  /health                                    -> { ok, provider }
+POST /call  { to, message, name?, location? }   -> { ok, id }
+POST /sms   { to, message, name?, location? }    -> { ok, id }
+
+# Đồng bộ đa thiết bị (bố + mẹ cùng nhận cảnh báo) — dùng Expo push:
+POST /register      { familyId, pushToken, deviceName? }        -> { ok, devices }
+POST /notify-family { familyId, title, body?, excludeToken? }    -> { ok, sent, dryRun }
+GET  /family/:id                                                 -> { ok, devices }
 ```
 
 `to` là số điện thoại (E.164, vd `+8490xxxxxxx`). `message` là nội dung cảnh báo.
+`pushToken` là Expo push token của thiết bị; đặt `PUSH_DRY_RUN=true` để test không gửi thật.
 
 ## Chọn provider
 

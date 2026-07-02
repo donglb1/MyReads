@@ -67,6 +67,22 @@ export async function stopAlarm(): Promise<void> {
   }
 }
 
+/** Lấy Expo push token của thiết bị (để đăng ký nhận cảnh báo đa thiết bị). */
+export async function getExpoPushToken(): Promise<string | undefined> {
+  try {
+    const perm = await Notifications.getPermissionsAsync();
+    if (perm.status !== 'granted') {
+      const req = await Notifications.requestPermissionsAsync();
+      if (req.status !== 'granted') return undefined;
+    }
+    const token = await Notifications.getExpoPushTokenAsync();
+    return token.data;
+  } catch (e) {
+    console.warn('[notifier] getExpoPushToken lỗi:', e);
+    return undefined;
+  }
+}
+
 /** Bắn thông báo cục bộ (hiện ngay). */
 export async function pushLocalNotification(title: string, body: string): Promise<void> {
   try {

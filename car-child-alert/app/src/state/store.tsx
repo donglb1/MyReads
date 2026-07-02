@@ -14,6 +14,7 @@ import {
   Child,
   Contact,
   GeoPoint,
+  SafePlace,
   Settings,
   Trip,
   TripEndReason,
@@ -30,7 +31,9 @@ import {
   startAlarm as fireAlarm,
   stopAlarm as silenceAlarm,
   pushLocalNotification,
+  getExpoPushToken,
 } from '@/services/notifier';
+import { placeLabelFor } from '@/services/geofence';
 
 interface StoreValue {
   data: AppData;
@@ -46,6 +49,8 @@ interface StoreValue {
   updateContact: (c: Contact) => void;
   removeContact: (id: string) => void;
   updateSettings: (s: Partial<Settings>) => void;
+  addPlace: (name: string) => Promise<boolean>;
+  removePlace: (id: string) => void;
   setOnboarded: (v: boolean) => void;
   // Chuyến & cảnh báo
   startTrip: () => void;
@@ -75,6 +80,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const engineRef = useRef<AlertEngine | null>(null);
+  const pushTokenRef = useRef<string | undefined>(undefined);
 
   const persist = useCallback((updater: (d: AppData) => AppData) => {
     setData((prev) => {
@@ -114,17 +120,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
         stopAlarm: () => silenceAlarm(),
         call: async (contact, location) => {
-          const msg = contactService.buildMessage(dataRef.current.children[0], location);
+          const label = placeLabelFor(location, dataRef.current.places);
+          const msg = contactService.buildMessage(dataRef.current.children[0], location, label);
           const r = await contactService.call(contact, msg, location);
           return r.ok;
         },
         sms: async (contact, location) => {
-          const msg = contactService.buildMessage(dataRef.current.children[0], location);
+          const label = placeLabelFor(location, dataRef.current.places);
+          const msg = contactService.buildMessage(dataRef.current.children[0], location, label);
           const r = await contactService.sms(contact, msg, location);
           return r.ok;
         },
         getLocation: () => getCurrentLocation(),
-        onAlertEvent: (level, location) => recordAlert(level, location),
+        onAlertEvent: (level, location) => {
+          recordAlert(level, location);
+          // Ngay khi bắt đầu báo động, báo cho các thiết bị khác trong gia đình (bố + mẹ).
+          if (level === 'alarm_local') {
+            const familyId = dataRef.current.settings.familyId;
+            if (familyId) {
+              const label = placeLabelFor(location, dataRef.current.places);
+              const body = label
+                ? `Chưa xác nhận đã đưa bé ra. Nơi đỗ: ${label}`
+                : 'Chưa xác nhận đã đưa bé ra khỏi xe. Kiểm tra ngay!';
+              contactService.notifyFamily(familyId, '🚨 Cảnh báo bé trên xe', body, pushTokenRef.current);
+            }
+          }
+        },
       },
       emptyData.settings,
     );
@@ -148,6 +169,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     engine.updateSettings(data.settings);
   }, [data.settings, engine]);
+
+  // Đăng ký thiết bị vào gia đình (để bố + mẹ cùng nhận cảnh báo) khi có familyId + backend.
+  useEffect(() => {
+    if (!ready) return;
+    const familyId = data.settings.familyId;
+    if (!familyId || !contactService.hasBackend()) return;
+    (async () => {
+      const token = pushTokenRef.current ?? (await getExpoPushToken());
+      if (!token) return;
+      pushTokenRef.current = token;
+      await contactService.registerFamilyDevice(familyId, token, `Thiết bị ${token.slice(-6)}`);
+    })();
+  }, [ready, data.settings.familyId]);
 
   // Bật/tắt tự động phát hiện kết thúc chuyến theo cài đặt.
   useEffect(() => {
@@ -231,6 +265,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       removeContact: (id) =>
         persist((d) => ({ ...d, contacts: d.contacts.filter((x) => x.id !== id) })),
       updateSettings: (s) => persist((d) => ({ ...d, settings: { ...d.settings, ...s } })),
+      addPlace: async (name) => {
+        const point = await getCurrentLocation();
+        if (!point) return false;
+        const place: SafePlace = {
+          id: newId(),
+          name,
+          latitude: point.latitude,
+          longitude: point.longitude,
+          radiusMeters: 150,
+        };
+        persist((d) => ({ ...d, places: [...d.places, place] }));
+        return true;
+      },
+      removePlace: (id) => persist((d) => ({ ...d, places: d.places.filter((x) => x.id !== id) })),
       setOnboarded: (v) => persist((d) => ({ ...d, onboarded: v })),
       startTrip,
       endTripManually,

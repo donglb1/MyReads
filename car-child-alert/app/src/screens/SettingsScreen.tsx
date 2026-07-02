@@ -6,12 +6,23 @@ import { colors, spacing } from '@/theme';
 import { useStore } from '@/state/store';
 
 export default function SettingsScreen() {
-  const { data, addChild, removeChild, addVehicle, removeVehicle, updateSettings } = useStore();
+  const {
+    data,
+    addChild,
+    removeChild,
+    addVehicle,
+    removeVehicle,
+    updateSettings,
+    addPlace,
+    removePlace,
+  } = useStore();
   const s = data.settings;
 
   const [childName, setChildName] = useState('');
   const [vehicleName, setVehicleName] = useState('');
   const [vehicleBt, setVehicleBt] = useState('');
+  const [familyId, setFamilyId] = useState(s.familyId ?? '');
+  const [placeName, setPlaceName] = useState('');
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -73,6 +84,50 @@ export default function SettingsScreen() {
             Định danh Bluetooth giúp tự phát hiện khi bạn xuống xe (chỉ Android + bản dev
             build; xem README).
           </Subtle>
+        </Card>
+
+        <Card>
+          <Title>Gia đình (bố + mẹ cùng nhận cảnh báo)</Title>
+          <Subtle>
+            Nhập cùng một mã trên điện thoại của bố và mẹ để cả hai cùng nhận cảnh báo. Cần đã
+            cấu hình backend.
+          </Subtle>
+          <Field
+            label="Mã gia đình"
+            value={familyId}
+            onChangeText={setFamilyId}
+            placeholder="VD: gia-dinh-nguyen"
+            autoCapitalize="none"
+          />
+          <Button
+            label="Lưu mã gia đình"
+            onPress={() => updateSettings({ familyId: familyId.trim() || undefined })}
+          />
+        </Card>
+
+        <Card>
+          <Title>Địa điểm an toàn</Title>
+          <Subtle>
+            Lưu nơi hay đỗ (nhà, trường) để cảnh báo hiển thị tên nơi đỗ thay vì chỉ toạ độ.
+          </Subtle>
+          {data.places.map((p) => (
+            <RowItem key={p.id} label={`${p.name} (${p.radiusMeters}m)`} onRemove={() => removePlace(p.id)} />
+          ))}
+          <Field
+            label="Tên địa điểm"
+            value={placeName}
+            onChangeText={setPlaceName}
+            placeholder="VD: Nhà / Trường"
+          />
+          <Button
+            label="＋ Lưu vị trí hiện tại"
+            onPress={async () => {
+              if (!placeName.trim()) return;
+              const ok = await addPlace(placeName.trim());
+              if (ok) setPlaceName('');
+            }}
+            disabled={!placeName.trim()}
+          />
         </Card>
 
         <Card>
