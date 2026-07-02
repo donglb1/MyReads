@@ -198,19 +198,29 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
 
 ## 10. Lộ trình (Roadmap)
 
+> **Quyết định đã chốt (2026-07-02):**
+> 1. **Nền tảng:** làm **cả hai (iOS + Android)** dùng chung một codebase Expo.
+> 2. **Cách gọi:** **gọi & SMS tự động qua backend** (Twilio/Stringee) là mục tiêu.
+>    Vì backend cần khoá API và không test đầy đủ được trong môi trường hiện tại,
+>    prototype dùng **provider cắm-được (pluggable)**: một `MockProvider` để chạy thử
+>    + đường dẫn tích hợp Twilio/Stringee đánh dấu rõ, và **fallback `tel:`/SMS** khi
+>    chưa cấu hình backend.
+> 3. **Tự động phát hiện:** đưa vào **ngay Phase 1** (Bluetooth xe + phát hiện lái xe),
+>    kèm **chế độ mô phỏng** để chạy được trên Expo Go / simulator khi không có thiết bị.
+
 **Phase 1 — Prototype phần mềm (mục tiêu gần):**
-- [ ] Khởi tạo project Expo, điều hướng, store, mô hình dữ liệu.
+- [ ] Khởi tạo project Expo (TS), điều hướng, store, mô hình dữ liệu.
 - [ ] Onboarding + xin quyền.
 - [ ] Quản lý hồ sơ bé, xe, liên hệ khẩn cấp.
-- [ ] Bắt đầu/kết thúc chuyến **thủ công** + màn hình Alert với đếm ngược.
-- [ ] alertEngine (máy trạng thái leo thang) + chuông/rung/thông báo.
-- [ ] Gọi/SMS người thân (mở sẵn màn hình gọi, SMS kèm vị trí).
-- [ ] Nhật ký.
+- [ ] Bắt đầu/kết thúc chuyến: **thủ công + tự động (Bluetooth/activity)** với mô phỏng.
+- [ ] alertEngine (máy trạng thái leo thang) + chuông/rung/thông báo + màn hình đếm ngược.
+- [ ] Gọi/SMS người thân qua **provider backend cắm-được** (mock + Twilio/Stringee stub),
+      fallback `tel:`/SMS kèm vị trí.
+- [ ] Nhật ký chuyến & cảnh báo.
 
-**Phase 2 — Tự động phát hiện:**
-- [ ] Tích hợp Bluetooth xe (phát hiện ngắt kết nối).
-- [ ] Phát hiện lái xe (activity recognition) + geofence.
-- [ ] Backend gửi SMS/cuộc gọi tự động (Twilio/Stringee), đồng bộ nhiều thiết bị.
+**Phase 2 — Nâng cấp thực địa:**
+- [ ] Hoàn thiện provider Twilio/Stringee thật + backend đồng bộ nhiều thiết bị (bố + mẹ).
+- [ ] Tinh chỉnh geofence (nhà/trường), học thói quen để giảm báo nhầm.
 
 **Phase 3 — Phần cứng:**
 - [ ] Thẻ BLE gắn ghế trẻ / cảm biến trọng lượng.
@@ -218,16 +228,13 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
 
 ---
 
-## 11. Câu hỏi cần chốt trước khi code Phase 1
+## 11. Câu hỏi còn mở (không chặn Phase 1)
 
-1. **Nền tảng ưu tiên:** Android trước, iOS trước, hay cả hai? (ảnh hưởng chức năng nền)
-2. **Ngôn ngữ UI:** chỉ tiếng Việt, hay song ngữ Việt/Anh?
-3. **Cách "gọi":** mở sẵn màn hình gọi để người dùng bấm (an toàn, dễ được duyệt store)
-   hay hướng tới gọi tự động qua backend (mạnh hơn, phức tạp & tốn phí)?
-4. **Tự động phát hiện:** đưa vào ngay Phase 1 hay để Phase 2 (prototype dùng thủ công)?
-5. **Tên & thương hiệu app:** giữ tạm "AnToànBé" hay đổi?
+- **Ngôn ngữ UI:** prototype làm **tiếng Việt** trước; có thể thêm song ngữ sau.
+- **Tên & thương hiệu:** tạm dùng **"AnToànBé"**, đổi sau nếu cần.
+- **Nhà cung cấp backend:** Twilio (quốc tế) hay Stringee (Việt Nam) — chốt khi lên Phase 2;
+  code Phase 1 để cả hai cùng cắm vào chung một interface.
 
 ---
 
-*Tài liệu này là bước "kế hoạch trước khi code". Sau khi bạn duyệt, tôi sẽ bắt đầu
-hiện thực Phase 1.*
+*Các quyết định chính đã chốt ở Mục 10. Đang hiện thực Phase 1 trong thư mục `app/`.*
