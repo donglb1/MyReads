@@ -27,6 +27,8 @@ import { AlertEngine, EngineState } from '@/services/alertEngine';
 import { tripDetector } from '@/services/tripDetector';
 import { startBluetoothDetection, stopBluetoothDetection } from '@/services/bluetoothClassic';
 import { startIosMotionDetection, stopIosMotionDetection } from '@/services/iosMotionDetector';
+import { obdReader } from '@/services/obdReader';
+import { rearSeatReminder } from '@/services/rearSeatReminder';
 import { contactService } from '@/services/contact';
 import { getCurrentLocation } from '@/services/location';
 import {
@@ -52,6 +54,8 @@ interface StoreValue {
   confirmSeconds: number;
   /** Ngữ cảnh hiện tại có "quen thuộc" (để hiện gợi ý) không. */
   isRoutineContext: boolean;
+  /** Nghi ngờ còn bé ở ghế sau (từ logic cửa OBD) cho lần cảnh báo hiện tại. */
+  suspectRearSeat: boolean;
   // Hồ sơ
   addChild: (c: Omit<Child, 'id'>) => void;
   removeChild: (id: string) => void;
@@ -81,6 +85,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Thời gian xác nhận hiệu lực (đã áp học thói quen) + gợi ý ngữ cảnh quen thuộc.
   const [confirmSeconds, setConfirmSeconds] = useState<number>(defaultSettings.t1Seconds);
   const [isRoutineContext, setIsRoutineContext] = useState(false);
+  const [suspectRearSeat, setSuspectRearSeat] = useState(false);
+  const suspectRearSeatRef = useRef(false);
 
   // Dùng ref để hooks của engine luôn thấy dữ liệu mới nhất mà không tạo lại engine.
   const dataRef = useRef(data);
@@ -217,10 +223,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       );
       // iOS: Core Motion + Visits (cần dev build + native module); no-op an toàn nếu không có.
       startIosMotionDetection();
+      // OBD (dữ liệu xe qua ELM327); no-op an toàn nếu không có dongle/module.
+      obdReader.startObd();
     } else {
       tripDetector.disableAutoDetect();
       stopBluetoothDetection();
       stopIosMotionDetection();
+      obdReader.stopObd();
     }
   }, [ready, data.settings.autoDetect]);
 
@@ -260,12 +269,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const key = contextKey(place?.id, new Date());
       const stat = d.habits[key];
       const base = d.settings.t1Seconds;
-      const seconds = d.settings.adaptiveConfirm ? adjustConfirmSeconds(base, stat) : base;
+      let seconds = d.settings.adaptiveConfirm ? adjustConfirmSeconds(base, stat) : base;
+
+      // Nghi có bé ở ghế sau (logic cửa OBD) → KHÔNG nới dài xác nhận (bảo vệ chặt hơn).
+      const suspect = rearSeatReminder.finish();
+      if (suspect) seconds = Math.min(seconds, base);
 
       currentContextRef.current = key;
       outcomeRecordedRef.current = false;
+      suspectRearSeatRef.current = suspect;
+      setSuspectRearSeat(suspect);
       setConfirmSeconds(seconds);
-      setIsRoutineContext(d.settings.adaptiveConfirm && isRoutine(stat));
+      setIsRoutineContext(d.settings.adaptiveConfirm && isRoutine(stat) && !suspect);
 
       engine.armConfirm(dataRef.current.contacts, { confirmSeconds: seconds, location });
     },
@@ -276,6 +291,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsub = tripDetector.subscribe((e) => {
       if (e.type === 'start') {
+        rearSeatReminder.onTripStart();
         const trip: Trip = {
           id: newId(),
           childId: dataRef.current.children[0]?.id,
@@ -288,7 +304,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         beginConfirm(e.reason);
       }
     });
-    return unsub;
+    // Sự kiện xe từ OBD: cửa → logic nhắc ghế sau; tắt máy → đánh dấu ignition off
+    // (chạy TRƯỚC khi tripDetector phát 'end', nhờ thứ tự trong obdReader.emit).
+    const unsubObd = obdReader.subscribe((e) => {
+      if (e.type === 'door') rearSeatReminder.onDoorEvent(e.rear, e.open);
+      else if (e.type === 'engine' && !e.on) rearSeatReminder.onIgnitionOff();
+    });
+    return () => {
+      unsub();
+      unsubObd();
+    };
   }, [beginConfirm, persist, setTrip]);
 
   const startTrip = useCallback(() => tripDetector.startManual(), []);
@@ -313,6 +338,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       activeTrip,
       confirmSeconds,
       isRoutineContext,
+      suspectRearSeat,
       addChild: (c) => persist((d) => ({ ...d, children: [...d.children, { ...c, id: newId() }] })),
       removeChild: (id) =>
         persist((d) => ({ ...d, children: d.children.filter((x) => x.id !== id) })),
@@ -354,6 +380,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       activeTrip,
       confirmSeconds,
       isRoutineContext,
+      suspectRearSeat,
       persist,
       startTrip,
       endTripManually,

@@ -25,7 +25,7 @@ export interface Contact {
   notifyByCall: boolean;
 }
 
-export type TripEndReason = 'manual' | 'bluetooth' | 'activity' | 'simulated';
+export type TripEndReason = 'manual' | 'bluetooth' | 'activity' | 'simulated' | 'obd';
 
 export interface Trip {
   id: string;

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Subtle, Title } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 import { useStore } from '@/state/store';
+import { obdReader } from '@/services/obdReader';
 
 export default function HomeScreen() {
   const { data, activeTrip, startTrip, endTripManually, simulateTripEnd } = useStore();
@@ -53,6 +54,17 @@ export default function HomeScreen() {
               ? `• ${contactCount} liên hệ khẩn cấp`
               : '• Chưa có liên hệ khẩn cấp — thêm ở tab Liên hệ (rất quan trọng!).'}
           </Subtle>
+        </Card>
+
+        <Card style={{ marginTop: spacing.lg }}>
+          <Title>OBD / dữ liệu xe (thử nghiệm)</Title>
+          <Subtle>
+            Mô phỏng tín hiệu từ xe (không cần dongle). Kịch bản: nổ máy → mở cửa sau (đặt bé)
+            → tắt máy. App sẽ nghi “còn bé ở ghế sau” và cảnh báo.
+          </Subtle>
+          <Button label="▶️ Mô phỏng nổ máy" variant="ghost" onPress={() => obdReader.simulateEngine(true)} />
+          <Button label="🚪 Mô phỏng mở cửa sau" variant="ghost" onPress={() => obdReader.simulateRearDoor(true)} />
+          <Button label="🔌 Mô phỏng tắt máy (đỗ xe)" variant="danger" onPress={() => obdReader.simulateEngine(false)} />
         </Card>
 
         <Text style={styles.tip}>

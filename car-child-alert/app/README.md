@@ -126,6 +126,21 @@ kèm GPS + nút thủ công; đáng tin cậy nhất vẫn là phần cứng (Ph
 Đồng bộ đa thiết bị dùng **Expo push** qua backend (`../server/`: `/register`,
 `/notify-family`). Push token lấy tự động khi có mã gia đình + backend đã cấu hình.
 
+## Phase 3 (bắt đầu) — dùng dữ liệu sẵn có của xe
+
+Không thêm cảm biến mới; đọc trạng thái xe qua **OBD-II dongle Bluetooth (ELM327)**:
+- `src/services/obdReader.ts` — đọc trạng thái **máy** (nổ/tắt) và **cửa** qua BLE (cần dev
+  build + `react-native-ble-plx`); **no-op an toàn trong Expo Go** và có hàm **mô phỏng**.
+- `src/services/rearSeatReminder.ts` — logic **"nhắc ghế sau"** thuần: nếu **cửa sau mở** lúc
+  lên xe và **tắt máy chưa mở lại** → nghi **còn bé ở ghế sau** → app **không nới dài** thời
+  gian xác nhận và hiện cảnh báo **"KIỂM TRA GHẾ SAU"**.
+
+**Thử không cần dongle:** ở **Trang chủ → OBD (thử nghiệm)** bấm lần lượt *Nổ máy → Mở cửa
+sau → Tắt máy*; màn hình cảnh báo sẽ báo nghi ngờ ghế sau.
+
+Còn lại (cần tài nguyên thật): hoàn thiện parse CAN theo hãng trong `obdReader` (cần dongle),
+và/hoặc tích hợp **API xe kết nối** (Smartcar/API hãng) ở server để đọc cửa/nhiệt độ cabin.
+
 ## ✅ Việc cần làm để Phase 1 chạy thật (bạn thực hiện)
 
 Phần code đã xong; các việc dưới đây cần tài nguyên/thiết bị của bạn:

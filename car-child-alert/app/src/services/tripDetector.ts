@@ -93,6 +93,17 @@ export class TripDetector {
     if (this.tripActive) this.emit({ type: 'end', reason: 'activity' });
   }
 
+  // ---- Dữ liệu xe qua OBD / API hãng (xem obdReader) ----
+  /** Xe nổ máy → bắt đầu chuyến. */
+  onVehicleEngineStart(): void {
+    if (!this.tripActive) this.emit({ type: 'start' });
+  }
+
+  /** Xe tắt máy → kết thúc chuyến. */
+  onVehicleEngineStop(): void {
+    if (this.tripActive) this.emit({ type: 'end', reason: 'obd' });
+  }
+
   // ---- Tự động theo activity/tốc độ ----
   async enableAutoDetect(): Promise<boolean> {
     if (this.autoEnabled) return true;

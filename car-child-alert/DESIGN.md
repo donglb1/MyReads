@@ -273,12 +273,16 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
       **chắc chắn** (leo thang mạnh, ít báo nhầm).
 
 **3.3. Tích hợp (kiến trúc hiện tại đã sẵn điểm cắm)**
-- [ ] **App:** service `obdReader.ts` (BLE tới ELM327) đọc trạng thái máy/cửa → nối vào
-      `tripDetector` như một nguồn tín hiệu mới (giống Bluetooth/iOS motion, guard an toàn).
+- [x] **App:** service `obdReader.ts` (BLE tới ELM327, guard an toàn + hàm mô phỏng) đọc
+      trạng thái máy/cửa → nối vào `tripDetector` (`onVehicleEngineStart/Stop`, reason `obd`).
+- [x] **Logic cửa** `rearSeatReminder.ts` (thuần, đã kiểm chứng): cửa sau mở lúc lên xe +
+      tắt máy chưa mở lại → cờ **"nghi có bé ở ghế sau"**; store dùng cờ này để **không nới
+      dài** thời gian xác nhận và hiện cảnh báo "KIỂM TRA GHẾ SAU" (thiên về cảnh báo).
+- [x] Nút **mô phỏng OBD** trên màn hình chính để test luồng không cần dongle/xe.
 - [ ] **Server:** tích hợp OAuth + đọc trạng thái xe qua **Smartcar/API hãng** (webhook hoặc
-      polling), đẩy sự kiện "tắt máy/đỗ" và nhiệt độ về app.
-- [ ] Mở rộng `alertEngine`: nhận cờ **"nghi có bé ở ghế sau"** (từ logic cửa) và **nhiệt độ**
-      để chỉnh thời gian/độ khẩn; giữ nguyên nguyên tắc **không bỏ sót**.
+      polling), đẩy sự kiện "tắt máy/đỗ" và **nhiệt độ cabin** về app.
+- [ ] Hoàn thiện parse CAN theo hãng trong `obdReader` (cần dongle thật để hiệu chỉnh PID).
+- [ ] Dùng **nhiệt độ cabin** để chỉnh độ khẩn của `alertEngine`.
 - [ ] Màn hình **kết nối xe** (ghép OBD dongle / đăng nhập tài khoản xe) + trạng thái dữ liệu.
 
 **3.4. Hạn chế & an toàn (quan trọng với tiền đề này)**
