@@ -159,28 +159,51 @@ ngờ, lý do và trạng thái "tài xế đã rời xe".
 Còn lại (cần tài nguyên thật): hoàn thiện parse CAN theo hãng trong `obdReader` (cần dongle),
 và/hoặc tích hợp **API xe kết nối** (Smartcar/API hãng) ở server để đọc cửa/nhiệt độ cabin.
 
-## ✅ Việc cần làm để Phase 1 chạy thật (bạn thực hiện)
+## ✅ Việc cần làm (Phase 1 · 2 · 3)
 
-Phần code đã xong; các việc dưới đây cần tài nguyên/thiết bị của bạn:
+> **Trạng thái chung:** toàn bộ **phần code của Phase 1–3 đã xong** và chạy được ở chế độ
+> mô phỏng (typecheck app xanh, test server PASS). Các mục `[ ]` dưới đây là việc **còn lại
+> để chạy thật**, đa số **cần thiết bị/tài khoản/kiểm thử vật lý của bạn**, không phải thiếu code.
 
-- [ ] **Cuộc gọi/SMS thật**
+### Phase 1 — Prototype cảnh báo (đã code xong)
+- [x] Onboarding, hồ sơ bé/xe, liên hệ khẩn cấp, máy trạng thái leo thang, chuông/rung/thông
+      báo, màn hình đếm ngược, nhật ký, gọi/SMS qua provider cắm-được (`mock`/`device`/backend).
+- [ ] **Cuộc gọi/SMS thật:**
   - [ ] Tạo tài khoản **Twilio** hoặc **Stringee**, lấy khoá + số gửi đi.
-  - [ ] Điền vào `../server/.env` (theo `.env.example`), đặt `PROVIDER=twilio|stringee`.
+  - [ ] Điền `../server/.env` (theo `.env.example`), đặt `PROVIDER=twilio|stringee`.
   - [ ] **Deploy** `../server/` (Render / Railway / Fly / Cloud Run...), lấy URL công khai.
   - [ ] Trong `src/state/store.tsx`: `contactService.configureBackend({ baseUrl, apiKey })`
-        và `contactService.setProvider('backend')`.
-- [ ] **Bluetooth xe thật (Android)**
-  - [ ] `npx expo prebuild && npx expo run:android` để tạo **dev build** (không dùng Expo Go).
-  - [ ] Ghép đôi điện thoại với Bluetooth xe, rồi vào **Cài đặt → Xe** nhập tên/địa chỉ BT.
-  - [ ] Thử một chuyến thật: lên xe (kết nối BT) → xuống xe (ngắt BT) để kiểm tra cảnh báo.
-- [ ] **Kiểm thử trên thiết bị thật**
-  - [ ] Chạy thử luồng cảnh báo end-to-end với số điện thoại thật (chỉnh T1/T2/T3 ngắn khi test).
-  - [ ] Kiểm tra hoạt động khi app chạy nền / màn hình khoá.
+        + `contactService.setProvider('backend')`.
+- [ ] **Kiểm thử thiết bị thật:** chạy end-to-end với số điện thoại thật (chỉnh T1/T2/T3 ngắn),
+      kiểm tra khi app chạy nền / màn hình khoá.
 
-## Giới hạn hiện tại (Phase 1)
+### Phase 2 — Đồng bộ bố+mẹ, geofence, học thói quen (đã code xong)
+- [x] Đồng bộ đa thiết bị (Expo push, mã gia đình), địa điểm an toàn (geofence), học thói quen
+      giảm báo nhầm, iOS Core Motion/Visits.
+- [ ] **Bật đồng bộ bố+mẹ thật:** deploy `../server/` (như trên) để `/register` + `/notify-family`
+      hoạt động; hai máy nhập cùng **Mã gia đình** (Cài đặt → Gia đình).
+- [ ] **iOS Core Motion/Visits chạy thật:** tạo **dev build** + native module cầu nối Core
+      Motion/Visits (interface ghi trong `src/services/iosMotionDetector.ts`); test trên iPhone thật.
 
-- Provider gọi/SMS mặc định là **mock**. Để gọi/SMS thật: dựng & deploy `../server/`
-  (Twilio hoặc Stringee), rồi `contactService.configureBackend(...)` + `setProvider('backend')`.
-- Bluetooth thật cần **dev build** + điện thoại Android + xe (xem mục trên).
-- Chạy nền liên tục trên iOS bị hạn chế; bản production nên bổ sung foreground service
-  (Android) và cân nhắc thiết bị phần cứng (xem DESIGN.md — Phase 3).
+### Phase 3 — Dùng cảm biến sẵn có của xe (đã code xong nhóm A)
+- [x] `obdReader` (máy/cửa/đai/chiếm chỗ/nhiệt độ + mô phỏng), logic nhắc ghế sau
+      (`rearSeatReminder`), hợp nhất tín hiệu (`presenceModel`), tín hiệu điện thoại
+      (`driverAwayDetector`: pedometer + RSSI), màn hình **Kết nối xe**, server **Smartcar**
+      (mã hoá token + tự refresh).
+- [ ] **OBD thật:** tạo **dev build**, cài `react-native-ble-plx`, và **hiệu chỉnh PID CAN theo
+      từng hãng** trong `obdReader` (đọc RSSI BLE thật + trạng thái máy/cửa) — cần **dongle ELM327 + xe**.
+- [ ] **Bluetooth Android thật:** `npx expo prebuild && npx expo run:android`, cài
+      `react-native-bluetooth-classic`, nhập tên/địa chỉ BT xe (Cài đặt → Xe), thử chuyến thật.
+- [ ] **Smartcar thật:** tạo tài khoản Smartcar, điền `SMARTCAR_*` trong `../server/.env`
+      (`VEHICLE_PROVIDER=smartcar`, `TOKEN_ENC_KEY`), liên kết xe ở tab **Xe** và kiểm chứng độ phủ theo hãng.
+- [ ] **Thử thực địa & quyết định:** kiểm thử từng hãng xe/dongle, kịch bản mất kết nối/hao ắc-quy;
+      chốt kênh chính cho thị trường VN; chính sách riêng tư dữ liệu vị trí/xe.
+
+### Ghi chú kỹ thuật
+- Thư viện native cho **dev build** (được nạp động, không nằm trong `package.json`):
+  `react-native-bluetooth-classic` (Android BT), `react-native-ble-plx` (OBD BLE).
+- Provider gọi/SMS mặc định là **mock**; các phần Bluetooth/OBD/iOS-motion **tự bỏ qua an toàn**
+  trong Expo Go và chạy được nhờ **nút mô phỏng** (Trang chủ). Đáng tin cậy nhất về lâu dài vẫn
+  là cảm biến chuyên dụng của xe.
+
+> Chi tiết đầy đủ theo từng mục nhỏ: xem checklist trong [`../DESIGN.md`](../DESIGN.md) (Mục 10).
