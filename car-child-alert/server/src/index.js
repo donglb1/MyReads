@@ -5,6 +5,8 @@ const { createTwilioProvider } = require('./providers/twilio');
 const { createStringeeProvider } = require('./providers/stringee');
 const { registerDevice, getFamily, getTokens } = require('./family');
 const { sendPush } = require('./push');
+const { buildVehicleProvider } = require('./vehicle');
+const { saveToken, getToken } = require('./vehicle/tokenStore');
 
 const PROVIDER = (process.env.PROVIDER || 'mock').toLowerCase();
 const PORT = Number(process.env.PORT || 3000);
@@ -24,6 +26,7 @@ function buildProvider() {
 }
 
 const provider = buildProvider();
+const vehicle = buildVehicleProvider();
 
 const app = express();
 app.use(express.json());
@@ -99,6 +102,44 @@ app.post('/notify-family', auth, async (req, res) => {
     res.json({ ok: true, ...result });
   } catch (e) {
     console.error('[notify-family] lỗi:', e.message);
+    res.status(502).json({ ok: false, error: e.message });
+  }
+});
+
+// ---- Dữ liệu xe kết nối (Smartcar/API hãng) ----
+
+// Lấy URL để người dùng liên kết tài khoản xe.
+app.get('/vehicle/auth-url', auth, (_req, res) => {
+  try {
+    res.json({ ok: true, url: vehicle.getAuthUrl(), provider: vehicle.name });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Đổi mã OAuth lấy token và lưu theo familyId.
+app.post('/vehicle/exchange', auth, async (req, res) => {
+  const { familyId, code } = req.body || {};
+  if (!familyId || !code) return res.status(400).json({ ok: false, error: 'thiếu familyId/code' });
+  try {
+    const token = await vehicle.exchangeCode(code);
+    saveToken(familyId, token);
+    res.json({ ok: true, vehicleId: token.vehicleId });
+  } catch (e) {
+    res.status(502).json({ ok: false, error: e.message });
+  }
+});
+
+// Đọc trạng thái xe (vị trí/khoá/odometer/nhiệt độ nếu có).
+app.get('/vehicle/state', auth, async (req, res) => {
+  const familyId = req.query.familyId;
+  if (!familyId) return res.status(400).json({ ok: false, error: 'thiếu familyId' });
+  const token = getToken(familyId);
+  if (!token) return res.status(404).json({ ok: false, error: 'chưa liên kết xe' });
+  try {
+    const state = await vehicle.getState(token.accessToken, token.vehicleId);
+    res.json({ ok: true, ...state });
+  } catch (e) {
     res.status(502).json({ ok: false, error: e.message });
   }
 });

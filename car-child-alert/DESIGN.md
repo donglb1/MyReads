@@ -284,10 +284,16 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
       trên chuyến** → điểm khả năng có bé + mức (low/medium/high) + lý do. **Nhiệt độ cabin**
       dùng để rút ngắn thời gian xác nhận (nóng → báo sớm). Chỉ **hạ mức** khi cảm biến chiếm
       chỗ báo ghế TRỐNG; còn lại luôn thiên về cảnh báo.
-- [ ] **Server:** tích hợp OAuth + đọc trạng thái xe qua **Smartcar/API hãng** (webhook hoặc
-      polling), đẩy sự kiện "tắt máy/đỗ" và **nhiệt độ cabin** về app.
+- [x] **Tín hiệu điện thoại** `driverAwayDetector.ts`: **Pedometer** (đi bộ rời xe) + hook
+      **RSSI** Bluetooth (rời xa xe) → khi nghi còn bé mà tài xế đã rời xe thì **leo thang sớm**
+      (`engine.hastenConfirm`). Có nút mô phỏng.
+- [x] **Nhiệt độ cabin** rút ngắn thời gian xác nhận (`confirmCapForTemp`).
+- [x] **Server:** tích hợp **Smartcar** (`server/src/vehicle/`): `/vehicle/auth-url`,
+      `/vehicle/exchange`, `/vehicle/state` (vị trí/odometer/khoá; provider `mock` để test —
+      đã PASS). Lưu ý: Smartcar KHÔNG cấp sự kiện cửa/đai/chiếm chỗ → bổ trợ ngữ cảnh, còn
+      phát hiện kết thúc chuyến vẫn dựa OBD.
 - [ ] Hoàn thiện parse CAN theo hãng trong `obdReader` (cần dongle thật để hiệu chỉnh PID).
-- [ ] Dùng **nhiệt độ cabin** để chỉnh độ khẩn của `alertEngine`.
+- [ ] RSSI thật từ lớp BLE (hiện có hook + mô phỏng); refresh token Smartcar.
 - [ ] Màn hình **kết nối xe** (ghép OBD dongle / đăng nhập tài khoản xe) + trạng thái dữ liệu.
 
 **3.4. Hạn chế & an toàn (quan trọng với tiền đề này)**

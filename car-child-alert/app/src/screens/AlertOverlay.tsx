@@ -32,6 +32,7 @@ export default function AlertOverlay() {
     isRoutineContext,
     suspectRearSeat,
     presenceReasons,
+    driverAway,
   } = useStore();
   const visible = engineState !== 'idle';
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -72,6 +73,9 @@ export default function AlertOverlay() {
             ⚠️ NGHI CÒN BÉ TRÊN XE — KIỂM TRA GHẾ SAU!
             {presenceReasons.length > 0 ? `\n(${presenceReasons.join('; ')})` : ''}
           </Text>
+        )}
+        {driverAway && (
+          <Text style={styles.hint}>🚶 Phát hiện tài xế đã rời xe — leo thang sớm.</Text>
         )}
         {engineState === 'confirming' && isRoutineContext && (
           <Text style={styles.hint}>💡 Bạn thường xuống xe ở đây — đã nới thời gian xác nhận.</Text>

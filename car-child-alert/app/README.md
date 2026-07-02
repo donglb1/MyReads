@@ -140,8 +140,16 @@ Không thêm cảm biến mới; đọc trạng thái xe qua **OBD-II dongle Blu
   bé trên chuyến → điểm khả năng có bé (low/medium/high). **Nhiệt độ cabin** rút ngắn thời
   gian xác nhận khi nóng. Chỉ hạ mức khi cảm biến ghế sau báo TRỐNG; còn lại thiên về cảnh báo.
 
+- `src/services/driverAwayDetector.ts` — **tín hiệu điện thoại**: **Pedometer** (expo-sensors,
+  chạy thật) phát hiện tài xế đi bộ rời xe, và hook **RSSI** Bluetooth (rời xa xe). Khi **nghi
+  còn bé** mà **tài xế đã rời xe** → app **leo thang sớm** (rút countdown còn ~10s).
+
 **Thử không cần dongle:** ở **Trang chủ → OBD (thử nghiệm)** bấm lần lượt *Nổ máy → Mở cửa
-sau → (Cài đai / Nhiệt độ 40°C) → Tắt máy*; màn hình cảnh báo hiện mức nghi ngờ + lý do.
+sau → (Cài đai / Nhiệt độ 40°C) → Tắt máy → (Tài xế rời xe)*; màn hình cảnh báo hiện mức nghi
+ngờ, lý do và trạng thái "tài xế đã rời xe".
+
+> Thư viện native cho dev build (tự cài khi prebuild, không nằm trong `package.json` vì được
+> nạp động): `react-native-bluetooth-classic` (Android BT), `react-native-ble-plx` (OBD BLE).
 
 Còn lại (cần tài nguyên thật): hoàn thiện parse CAN theo hãng trong `obdReader` (cần dongle),
 và/hoặc tích hợp **API xe kết nối** (Smartcar/API hãng) ở server để đọc cửa/nhiệt độ cabin.

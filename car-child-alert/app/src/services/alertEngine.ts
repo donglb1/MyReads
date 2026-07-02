@@ -80,6 +80,17 @@ export class AlertEngine {
     this.schedule(this.confirmSeconds, () => this.toAlarmLocal());
   }
 
+  /**
+   * Rút ngắn bước xác nhận (vd khi xác nhận tài xế đã rời xe + nghi còn bé) → báo động sớm hơn.
+   * Chỉ tác dụng khi đang ở bước xác nhận và giá trị mới ngắn hơn hiện tại.
+   */
+  hastenConfirm(seconds: number): void {
+    if (this.state !== 'confirming') return;
+    if (seconds >= this.confirmSeconds) return;
+    this.confirmSeconds = seconds;
+    this.schedule(seconds, () => this.toAlarmLocal());
+  }
+
   /** Người dùng xác nhận đã đưa bé ra khỏi xe → dừng mọi cảnh báo. */
   acknowledge(): void {
     this.clearTimer();

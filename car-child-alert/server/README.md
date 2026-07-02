@@ -31,7 +31,16 @@ POST /sms   { to, message, name?, location? }    -> { ok, id }
 POST /register      { familyId, pushToken, deviceName? }        -> { ok, devices }
 POST /notify-family { familyId, title, body?, excludeToken? }    -> { ok, sent, dryRun }
 GET  /family/:id                                                 -> { ok, devices }
+
+# Dữ liệu xe kết nối (Smartcar) — VEHICLE_PROVIDER=mock|smartcar:
+GET  /vehicle/auth-url                        -> { ok, url }          # link liên kết xe
+POST /vehicle/exchange { familyId, code }     -> { ok, vehicleId }    # đổi mã OAuth
+GET  /vehicle/state?familyId=...              -> { ok, location, odometerKm, ... }
 ```
+
+**Smartcar** cung cấp vị trí/odometer/khoá/thông tin xe — **không** có sự kiện cửa/đai/chiếm
+chỗ ghế sau, nên chỉ bổ trợ ngữ cảnh; phát hiện kết thúc chuyến/logic cửa vẫn do OBD (app)
+đảm nhiệm. Đặt `VEHICLE_PROVIDER=mock` để chạy thử không cần tài khoản xe.
 
 `to` là số điện thoại (E.164, vd `+8490xxxxxxx`). `message` là nội dung cảnh báo.
 `pushToken` là Expo push token của thiết bị; đặt `PUSH_DRY_RUN=true` để test không gửi thật.

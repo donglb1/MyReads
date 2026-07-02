@@ -3,6 +3,7 @@
 const os = require('os');
 const path = require('path');
 process.env.PROVIDER = 'mock';
+process.env.VEHICLE_PROVIDER = 'mock';
 process.env.API_KEY = 'test-key';
 process.env.PUSH_DRY_RUN = 'true';
 // Dùng file tạm để không đụng dữ liệu thật.
@@ -93,6 +94,23 @@ async function run() {
     });
     j = await r.json();
     check(r.status === 200 && j.sent === 1 && j.dryRun === true, 'POST /notify-family -> gửi 1 (loại trừ người gửi)');
+
+    // Dữ liệu xe (mock): auth-url → exchange → state.
+    r = await fetch(`${base}/vehicle/auth-url`, { headers: authHeaders });
+    j = await r.json();
+    check(r.status === 200 && typeof j.url === 'string', 'GET /vehicle/auth-url -> có url');
+
+    r = await fetch(`${base}/vehicle/exchange`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ familyId: 'fam1', code: 'mock-code' }),
+    });
+    j = await r.json();
+    check(r.status === 200 && j.vehicleId === 'mock-vehicle', 'POST /vehicle/exchange -> lưu token');
+
+    r = await fetch(`${base}/vehicle/state?familyId=fam1`, { headers: authHeaders });
+    j = await r.json();
+    check(r.status === 200 && !!j.location && j.cabinTempC === 33, 'GET /vehicle/state -> có vị trí + nhiệt độ');
   } finally {
     server.close();
   }

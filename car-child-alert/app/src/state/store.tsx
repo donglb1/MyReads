@@ -30,6 +30,7 @@ import { startIosMotionDetection, stopIosMotionDetection } from '@/services/iosM
 import { obdReader } from '@/services/obdReader';
 import { rearSeatReminder } from '@/services/rearSeatReminder';
 import { assessChildPresence, confirmCapForTemp } from '@/services/presenceModel';
+import { driverAwayDetector } from '@/services/driverAwayDetector';
 import { contactService } from '@/services/contact';
 import { getCurrentLocation } from '@/services/location';
 import {
@@ -59,6 +60,8 @@ interface StoreValue {
   suspectRearSeat: boolean;
   /** Các lý do dẫn tới nghi ngờ (để hiển thị). */
   presenceReasons: string[];
+  /** Điện thoại xác nhận tài xế đã rời xe (tín hiệu leo thang sớm). */
+  driverAway: boolean;
   // Hồ sơ
   addChild: (c: Omit<Child, 'id'>) => void;
   removeChild: (id: string) => void;
@@ -90,6 +93,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [isRoutineContext, setIsRoutineContext] = useState(false);
   const [suspectRearSeat, setSuspectRearSeat] = useState(false);
   const [presenceReasons, setPresenceReasons] = useState<string[]>([]);
+  const [driverAway, setDriverAway] = useState(false);
   const suspectRearSeatRef = useRef(false);
   // Trạng thái xe mới nhất từ OBD (đặt lại theo từng chuyến với đai/chiếm chỗ).
   const rearSeatbeltRef = useRef(false);
@@ -173,6 +177,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           if (level === 'alarm_local') {
             // Leo thang tới báo động = ngữ cảnh "rủi ro" cho học thói quen.
             recordHabitRef.current?.('escalation');
+            driverAwayDetector.disarm();
             const familyId = dataRef.current.settings.familyId;
             if (familyId) {
               const label = placeLabelFor(location, dataRef.current.places);
@@ -297,7 +302,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setSuspectRearSeat(suspect);
       setPresenceReasons(assessment.reasons);
       setConfirmSeconds(seconds);
+      setDriverAway(false);
       setIsRoutineContext(d.settings.adaptiveConfirm && isRoutine(stat) && !suspect);
+
+      // Nếu nghi còn bé, theo dõi điện thoại để biết tài xế có rời xe không (leo thang sớm).
+      if (suspect) driverAwayDetector.arm();
 
       engine.armConfirm(dataRef.current.contacts, { confirmSeconds: seconds, location });
     },
@@ -333,11 +342,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       else if (e.type === 'occupancy' && e.rear) rearOccupancyRef.current = e.occupied;
       else if (e.type === 'temp') cabinTempRef.current = e.celsius;
     });
+    // Điện thoại xác nhận tài xế đã rời xe → nếu đang xác nhận và nghi còn bé, leo thang sớm.
+    const unsubAway = driverAwayDetector.subscribe(() => {
+      setDriverAway(true);
+      if (engine.getState() === 'confirming' && suspectRearSeatRef.current) {
+        engine.hastenConfirm(10);
+        setConfirmSeconds(10);
+      }
+    });
     return () => {
       unsub();
       unsubObd();
+      unsubAway();
     };
-  }, [beginConfirm, persist, setTrip]);
+  }, [beginConfirm, persist, setTrip, engine]);
 
   const startTrip = useCallback(() => tripDetector.startManual(), []);
   const endTripManually = useCallback(() => tripDetector.endManual(), []);
@@ -349,6 +367,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const acknowledge = useCallback(() => {
     // Xác nhận ngay ở bước hỏi = ngữ cảnh "quen thuộc" cho học thói quen.
     if (engine.getState() === 'confirming') recordHabit('ack');
+    driverAwayDetector.disarm();
     engine.acknowledge();
     setTrip(null);
   }, [engine, setTrip, recordHabit]);
@@ -363,6 +382,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       isRoutineContext,
       suspectRearSeat,
       presenceReasons,
+      driverAway,
       addChild: (c) => persist((d) => ({ ...d, children: [...d.children, { ...c, id: newId() }] })),
       removeChild: (id) =>
         persist((d) => ({ ...d, children: d.children.filter((x) => x.id !== id) })),
@@ -406,6 +426,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       isRoutineContext,
       suspectRearSeat,
       presenceReasons,
+      driverAway,
       persist,
       startTrip,
       endTripManually,
