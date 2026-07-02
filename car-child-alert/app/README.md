@@ -1,4 +1,6 @@
-# AnToànBé — App cảnh báo quên trẻ trên ô tô (Phase 1 prototype)
+# KidGuard — App cảnh báo quên trẻ trên ô tô
+
+> Tên hiển thị Play Store đề xuất: **KidGuard – Cảnh báo trẻ trên xe**.
 
 Ứng dụng di động (Expo / React Native, chạy cả **iOS & Android**) giúp cảnh báo khi
 có nguy cơ bỏ quên trẻ nhỏ trên ô tô. Khi kết thúc chuyến đi mà bố/mẹ không xác nhận đã

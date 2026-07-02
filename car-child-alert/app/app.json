@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "AnToànBé",
-    "slug": "antoanbe",
+    "name": "KidGuard",
+    "slug": "kidguard",
     "version": "0.1.0",
     "orientation": "portrait",
-    "scheme": "antoanbe",
+    "scheme": "kidguard",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,7 +14,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.antoanbe.app",
+      "bundleIdentifier": "com.kidguard.app",
       "infoPlist": {
         "UIBackgroundModes": ["location", "fetch", "audio"],
         "NSLocationWhenInUseUsageDescription": "Dùng vị trí để đính kèm nơi đỗ xe khi gửi cảnh báo cho người thân.",
@@ -23,7 +23,7 @@
       }
     },
     "android": {
-      "package": "com.antoanbe.app",
+      "package": "com.kidguard.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",

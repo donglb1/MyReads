@@ -19,7 +19,7 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.logo}>🚗👶 AnToànBé</Text>
+        <Text style={styles.logo}>🚗👶 KidGuard</Text>
         <Subtle>Hệ thống cảnh báo quên trẻ trên ô tô</Subtle>
 
         <Card style={{ marginTop: spacing.lg }}>
