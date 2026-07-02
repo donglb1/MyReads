@@ -29,6 +29,7 @@ import { startBluetoothDetection, stopBluetoothDetection } from '@/services/blue
 import { startIosMotionDetection, stopIosMotionDetection } from '@/services/iosMotionDetector';
 import { obdReader } from '@/services/obdReader';
 import { rearSeatReminder } from '@/services/rearSeatReminder';
+import { assessChildPresence, confirmCapForTemp } from '@/services/presenceModel';
 import { contactService } from '@/services/contact';
 import { getCurrentLocation } from '@/services/location';
 import {
@@ -54,8 +55,10 @@ interface StoreValue {
   confirmSeconds: number;
   /** Ngữ cảnh hiện tại có "quen thuộc" (để hiện gợi ý) không. */
   isRoutineContext: boolean;
-  /** Nghi ngờ còn bé ở ghế sau (từ logic cửa OBD) cho lần cảnh báo hiện tại. */
+  /** Nghi ngờ còn bé trên xe (hợp nhất tín hiệu) cho lần cảnh báo hiện tại. */
   suspectRearSeat: boolean;
+  /** Các lý do dẫn tới nghi ngờ (để hiển thị). */
+  presenceReasons: string[];
   // Hồ sơ
   addChild: (c: Omit<Child, 'id'>) => void;
   removeChild: (id: string) => void;
@@ -86,7 +89,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [confirmSeconds, setConfirmSeconds] = useState<number>(defaultSettings.t1Seconds);
   const [isRoutineContext, setIsRoutineContext] = useState(false);
   const [suspectRearSeat, setSuspectRearSeat] = useState(false);
+  const [presenceReasons, setPresenceReasons] = useState<string[]>([]);
   const suspectRearSeatRef = useRef(false);
+  // Trạng thái xe mới nhất từ OBD (đặt lại theo từng chuyến với đai/chiếm chỗ).
+  const rearSeatbeltRef = useRef(false);
+  const rearOccupancyRef = useRef<boolean | undefined>(undefined);
+  const cabinTempRef = useRef<number | undefined>(undefined);
 
   // Dùng ref để hooks của engine luôn thấy dữ liệu mới nhất mà không tạo lại engine.
   const dataRef = useRef(data);
@@ -271,14 +279,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const base = d.settings.t1Seconds;
       let seconds = d.settings.adaptiveConfirm ? adjustConfirmSeconds(base, stat) : base;
 
-      // Nghi có bé ở ghế sau (logic cửa OBD) → KHÔNG nới dài xác nhận (bảo vệ chặt hơn).
-      const suspect = rearSeatReminder.finish();
+      // Hợp nhất nhiều tín hiệu sẵn có để ước lượng khả năng còn bé trên xe.
+      const assessment = assessChildPresence({
+        rearOccupancy: rearOccupancyRef.current,
+        rearSeatbeltBuckled: rearSeatbeltRef.current,
+        rearDoorSuspect: rearSeatReminder.finish(),
+        childRegisteredAboard: !!trip.childId,
+      });
+      const suspect = assessment.level !== 'low';
+      // Nghi có bé → KHÔNG nới dài xác nhận; nhiệt độ nóng → rút ngắn thêm.
       if (suspect) seconds = Math.min(seconds, base);
+      seconds = confirmCapForTemp(seconds, cabinTempRef.current);
 
       currentContextRef.current = key;
       outcomeRecordedRef.current = false;
       suspectRearSeatRef.current = suspect;
       setSuspectRearSeat(suspect);
+      setPresenceReasons(assessment.reasons);
       setConfirmSeconds(seconds);
       setIsRoutineContext(d.settings.adaptiveConfirm && isRoutine(stat) && !suspect);
 
@@ -292,6 +309,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const unsub = tripDetector.subscribe((e) => {
       if (e.type === 'start') {
         rearSeatReminder.onTripStart();
+        // Đặt lại trạng thái đai/chiếm chỗ cho chuyến mới (nhiệt độ giữ giá trị mới nhất).
+        rearSeatbeltRef.current = false;
+        rearOccupancyRef.current = undefined;
         const trip: Trip = {
           id: newId(),
           childId: dataRef.current.children[0]?.id,
@@ -309,6 +329,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const unsubObd = obdReader.subscribe((e) => {
       if (e.type === 'door') rearSeatReminder.onDoorEvent(e.rear, e.open);
       else if (e.type === 'engine' && !e.on) rearSeatReminder.onIgnitionOff();
+      else if (e.type === 'seatbelt' && e.rear) rearSeatbeltRef.current = e.buckled;
+      else if (e.type === 'occupancy' && e.rear) rearOccupancyRef.current = e.occupied;
+      else if (e.type === 'temp') cabinTempRef.current = e.celsius;
     });
     return () => {
       unsub();
@@ -339,6 +362,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       confirmSeconds,
       isRoutineContext,
       suspectRearSeat,
+      presenceReasons,
       addChild: (c) => persist((d) => ({ ...d, children: [...d.children, { ...c, id: newId() }] })),
       removeChild: (id) =>
         persist((d) => ({ ...d, children: d.children.filter((x) => x.id !== id) })),
@@ -381,6 +405,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       confirmSeconds,
       isRoutineContext,
       suspectRearSeat,
+      presenceReasons,
       persist,
       startTrip,
       endTripManually,

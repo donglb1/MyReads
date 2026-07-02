@@ -135,8 +135,13 @@ Không thêm cảm biến mới; đọc trạng thái xe qua **OBD-II dongle Blu
   lên xe và **tắt máy chưa mở lại** → nghi **còn bé ở ghế sau** → app **không nới dài** thời
   gian xác nhận và hiện cảnh báo **"KIỂM TRA GHẾ SAU"**.
 
+- `src/services/presenceModel.ts` — **hợp nhất nhiều tín hiệu** để tăng chính xác: cảm biến
+  chiếm chỗ ghế sau (nếu xe có, đáng tin nhất), **đai an toàn ghế sau**, logic cửa, và hồ sơ
+  bé trên chuyến → điểm khả năng có bé (low/medium/high). **Nhiệt độ cabin** rút ngắn thời
+  gian xác nhận khi nóng. Chỉ hạ mức khi cảm biến ghế sau báo TRỐNG; còn lại thiên về cảnh báo.
+
 **Thử không cần dongle:** ở **Trang chủ → OBD (thử nghiệm)** bấm lần lượt *Nổ máy → Mở cửa
-sau → Tắt máy*; màn hình cảnh báo sẽ báo nghi ngờ ghế sau.
+sau → (Cài đai / Nhiệt độ 40°C) → Tắt máy*; màn hình cảnh báo hiện mức nghi ngờ + lý do.
 
 Còn lại (cần tài nguyên thật): hoàn thiện parse CAN theo hãng trong `obdReader` (cần dongle),
 và/hoặc tích hợp **API xe kết nối** (Smartcar/API hãng) ở server để đọc cửa/nhiệt độ cabin.

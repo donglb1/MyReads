@@ -17,7 +17,10 @@ import { tripDetector } from './tripDetector';
 
 export type VehicleEvent =
   | { type: 'engine'; on: boolean }
-  | { type: 'door'; rear: boolean; open: boolean };
+  | { type: 'door'; rear: boolean; open: boolean }
+  | { type: 'seatbelt'; rear: boolean; buckled: boolean }
+  | { type: 'occupancy'; rear: boolean; occupied: boolean }
+  | { type: 'temp'; celsius: number };
 
 type Listener = (e: VehicleEvent) => void;
 
@@ -82,6 +85,18 @@ class ObdReader {
 
   simulateRearDoor(open: boolean): void {
     this.emit({ type: 'door', rear: true, open });
+  }
+
+  simulateRearSeatbelt(buckled: boolean): void {
+    this.emit({ type: 'seatbelt', rear: true, buckled });
+  }
+
+  simulateRearOccupancy(occupied: boolean): void {
+    this.emit({ type: 'occupancy', rear: true, occupied });
+  }
+
+  simulateCabinTemp(celsius: number): void {
+    this.emit({ type: 'temp', celsius });
   }
 }
 

@@ -64,6 +64,8 @@ export default function HomeScreen() {
           </Subtle>
           <Button label="▶️ Mô phỏng nổ máy" variant="ghost" onPress={() => obdReader.simulateEngine(true)} />
           <Button label="🚪 Mô phỏng mở cửa sau" variant="ghost" onPress={() => obdReader.simulateRearDoor(true)} />
+          <Button label="🔒 Mô phỏng cài đai ghế sau" variant="ghost" onPress={() => obdReader.simulateRearSeatbelt(true)} />
+          <Button label="🌡️ Mô phỏng cabin 40°C (nóng)" variant="ghost" onPress={() => obdReader.simulateCabinTemp(40)} />
           <Button label="🔌 Mô phỏng tắt máy (đỗ xe)" variant="danger" onPress={() => obdReader.simulateEngine(false)} />
         </Card>
 

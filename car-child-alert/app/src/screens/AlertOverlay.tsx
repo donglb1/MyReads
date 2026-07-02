@@ -24,8 +24,15 @@ const LEVEL_TEXT: Record<Exclude<EngineState, 'idle'>, { title: string; sub: str
 };
 
 export default function AlertOverlay() {
-  const { engineState, acknowledge, data, confirmSeconds, isRoutineContext, suspectRearSeat } =
-    useStore();
+  const {
+    engineState,
+    acknowledge,
+    data,
+    confirmSeconds,
+    isRoutineContext,
+    suspectRearSeat,
+    presenceReasons,
+  } = useStore();
   const visible = engineState !== 'idle';
   const [remaining, setRemaining] = useState<number | null>(null);
 
@@ -61,7 +68,10 @@ export default function AlertOverlay() {
         <Text style={styles.sub}>{info.sub}</Text>
 
         {suspectRearSeat && (
-          <Text style={styles.hint}>🚪 Cửa sau đã mở lúc lên xe — hãy KIỂM TRA GHẾ SAU!</Text>
+          <Text style={styles.hint}>
+            ⚠️ NGHI CÒN BÉ TRÊN XE — KIỂM TRA GHẾ SAU!
+            {presenceReasons.length > 0 ? `\n(${presenceReasons.join('; ')})` : ''}
+          </Text>
         )}
         {engineState === 'confirming' && isRoutineContext && (
           <Text style={styles.hint}>💡 Bạn thường xuống xe ở đây — đã nới thời gian xác nhận.</Text>

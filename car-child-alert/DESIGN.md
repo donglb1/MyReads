@@ -279,6 +279,11 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
       tắt máy chưa mở lại → cờ **"nghi có bé ở ghế sau"**; store dùng cờ này để **không nới
       dài** thời gian xác nhận và hiện cảnh báo "KIỂM TRA GHẾ SAU" (thiên về cảnh báo).
 - [x] Nút **mô phỏng OBD** trên màn hình chính để test luồng không cần dongle/xe.
+- [x] **Hợp nhất tín hiệu** `presenceModel.ts` (đã kiểm chứng): kết hợp **cảm biến chiếm chỗ
+      ghế sau** (nếu có, đáng tin nhất), **đai an toàn ghế sau**, **logic cửa**, và **hồ sơ bé
+      trên chuyến** → điểm khả năng có bé + mức (low/medium/high) + lý do. **Nhiệt độ cabin**
+      dùng để rút ngắn thời gian xác nhận (nóng → báo sớm). Chỉ **hạ mức** khi cảm biến chiếm
+      chỗ báo ghế TRỐNG; còn lại luôn thiên về cảnh báo.
 - [ ] **Server:** tích hợp OAuth + đọc trạng thái xe qua **Smartcar/API hãng** (webhook hoặc
       polling), đẩy sự kiện "tắt máy/đỗ" và **nhiệt độ cabin** về app.
 - [ ] Hoàn thiện parse CAN theo hãng trong `obdReader` (cần dongle thật để hiệu chỉnh PID).
