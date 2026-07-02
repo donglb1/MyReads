@@ -239,9 +239,63 @@ CALLING_CONTACTS ──timeout(T3)/no-answer──> ESCALATED
       cần **dev build + native module** để chạy thật, no-op an toàn trong Expo Go.
 - [ ] iOS CarPlay UI: bỏ (không phù hợp danh mục entitlement của Apple).
 
-**Phase 3 — Phần cứng:**
-- [ ] Thẻ BLE gắn ghế trẻ / cảm biến trọng lượng.
-- [ ] Thiết bị cảm biến trên xe (nhiệt độ, chuyển động, CO₂).
+**Phase 3 — Phần cứng (phác thảo):**
+
+Mục tiêu: chuyển từ **suy luận gián tiếp** (điện thoại) sang **biết chắc có bé trên xe**
+bằng cảm biến, để gần như **không bỏ sót** và **giảm mạnh báo nhầm**, đồng thời **cảnh báo
+độc lập** kể cả khi điện thoại ở xa.
+
+**3.0. Chốt phương án cảm biến (quyết định nền tảng)**
+- [ ] So sánh & chọn cách phát hiện có bé:
+  - **Radar mmWave trong cabin** (vd LD2410/60GHz): nhận cả bé đang ngủ qua vi chuyển động/nhịp
+    thở — độ tin cậy cao nhất, đúng hướng quy định xe mới (EU/US). Phức tạp & đắt hơn.
+  - **Cảm biến chiếm chỗ ghế**: trọng lượng (FSR/load cell) hoặc điện dung — rẻ, nhưng dễ nhầm
+    với túi đồ; cần hiệu chỉnh.
+  - **Khoá đai an toàn (buckle sensor) + BLE**: biết bé đã cài đai; đơn giản, chi phí thấp.
+  - **Thẻ/beacon BLE gắn ghế trẻ**: rẻ nhất nhưng chỉ biết "ghế/thẻ ở đó", không chắc có bé.
+- [ ] Chọn tổ hợp: khuyến nghị **radar hoặc cảm biến chiếm chỗ** (biết có bé) **+ nhiệt độ**.
+
+**3.1. Thiết kế thiết bị (hardware)**
+- [ ] Vi điều khiển: **ESP32** (BLE + WiFi) hoặc nRF52; cân nhắc **module cellular (SIM)** để
+      cảnh báo độc lập khi điện thoại ra khỏi tầm.
+- [ ] Cảm biến: chiếm chỗ/ radar + **nhiệt độ** (SHT/DS18B20), tuỳ chọn **CO₂** (SCD40),
+      **chuyển động** (PIR/mmWave).
+- [ ] Nguồn: pin sạc + nguồn xe (USB/OBD-II/12V), chế độ ngủ sâu, **wake khi có chuyển động**.
+- [ ] Còi báo động tại chỗ (buzzer to) + đèn — hoạt động **không phụ thuộc điện thoại**.
+- [ ] Vỏ, cách gắn (ghế/táp-lô), chịu nhiệt độ cabin (−10…70°C).
+
+**3.2. Firmware**
+- [ ] Máy trạng thái: (xe tắt máy / dừng) + (có bé) + (không có người lớn) → báo động leo thang.
+- [ ] Định nghĩa **BLE GATT service** (đặc tính: `presence`, `weight`, `temperature`,
+      `battery`, `alarmState`); chuẩn hoá để app đọc.
+- [ ] Ngưỡng an toàn theo **nhiệt độ** (nhiệt tăng nhanh → rút ngắn thời gian, báo sớm).
+- [ ] **OTA update** firmware; nhật ký sự cố.
+- [ ] Đường cảnh báo độc lập qua cellular (SMS/HTTP) khi mất BLE.
+
+**3.3. Tích hợp app (đã có sẵn điểm cắm)**
+- [ ] Model `SensorDevice` (bleId, firmware, pin) + luồng **ghép đôi (pairing)** trong app.
+- [ ] Service `hardwareSensor.ts` đọc BLE GATT → cấp tín hiệu **"có bé chắc chắn"** cho hệ thống.
+- [ ] Mở rộng `alertEngine`: khi **biết có bé** → leo thang **mạnh & sớm hơn**; khi **chắc chắn
+      không có bé** → **bỏ qua** chu trình (giảm báo nhầm) — an toàn vì dựa trên cảm biến thật.
+- [ ] Màn hình **trạng thái thiết bị** (pin, kết nối, nhiệt độ) + cảnh báo pin yếu/mất kết nối.
+- [ ] `tripDetector` nhận thêm nguồn tín hiệu phần cứng (kiến trúc hiện tại đã hỗ trợ cắm thêm).
+
+**3.4. Kiểm thử & an toàn**
+- [ ] Thử nghiệm thực địa: tỉ lệ **bỏ sót = 0**, đo tỉ lệ **báo nhầm**.
+- [ ] Thử trong **buồng nhiệt** (mô phỏng xe nắng nóng), thử mất điện/mất sóng.
+- [ ] Kịch bản pin điện thoại hết / thiết bị hết pin.
+
+**3.5. Pháp lý & chứng nhận**
+- [ ] Chứng nhận vô tuyến/EMC: **FCC/CE** và **MIC (Việt Nam)**; an toàn ô tô.
+- [ ] Tuân thủ quy định nhắc-trẻ-trên-xe (tham chiếu quy định xe mới EU/US).
+- [ ] Quyền riêng tư dữ liệu cảm biến/vị trí.
+
+**3.6. Sản xuất**
+- [ ] Prototype breadboard (ESP32 + cảm biến) → PCB → vỏ → thử nghiệm nhỏ (pilot).
+- [ ] Định giá linh kiện (BOM), kế hoạch sản xuất hàng loạt.
+
+> Ghi chú: đây là **kế hoạch/phác thảo** cho Phase 3; phần này cần **kỹ thuật phần cứng, linh
+> kiện thật và kiểm thử vật lý**, không thực hiện được chỉ bằng code trong phiên hiện tại.
 
 ---
 
