@@ -3,10 +3,13 @@
 Server nhỏ (Node/Express) nhận yêu cầu từ app và thực hiện **gọi điện + gửi SMS** qua
 nhà cung cấp thật. Giữ khoá bí mật ở đây, app **không** chứa khoá.
 
-Hỗ trợ 3 provider chung một interface `{ call, sms }`:
+Hỗ trợ nhiều provider chung một interface `{ call, sms }`:
 - `mock` — không gọi thật, chỉ log (mặc định, để chạy thử).
 - `twilio` — gọi (đọc TwiML tiếng Việt) + SMS.
 - `stringee` — gọi ra (callout + SCCO "talk"); SMS cần brandname được duyệt.
+- `telegram` — **MIỄN PHÍ, không cần Twilio/Stringee**: gửi tin cảnh báo tới group Telegram
+  của bố mẹ (Telegram không gọi thoại được nên "call" cũng là tin nhắn khẩn). Lấy
+  `TELEGRAM_BOT_TOKEN` từ @BotFather và `TELEGRAM_CHAT_ID` từ getUpdates.
 
 ## Chạy
 

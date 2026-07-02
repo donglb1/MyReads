@@ -73,6 +73,10 @@ contactService.setProvider('backend'); // thay cho 'mock'
 
 Xem `src/services/contact/backendProvider.ts` để biết chi tiết interface.
 
+> **Không muốn tốn cước?** Server còn có provider **`telegram`** (miễn phí): đặt
+> `PROVIDER=telegram` + `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` trong `../server/.env`, cảnh
+> báo sẽ gửi vào group Telegram của bố mẹ. App không cần đổi gì (vẫn gọi `/call` `/sms`).
+
 ## Bluetooth xe thật (Android) — cần dev build
 
 Phát hiện tự động khi bạn **xuống xe** dựa trên việc điện thoại **ngắt kết nối Bluetooth**

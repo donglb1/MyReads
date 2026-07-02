@@ -125,6 +125,14 @@ async function run() {
     r = await fetch(`${base}/vehicle/state?familyId=fam1`, { headers: authHeaders });
     check(r.status === 200, 'GET /vehicle/state khi token hết hạn -> tự refresh OK');
     check(getToken('fam1').accessToken === 'mock-access-2', 'token đã được refresh & lưu lại');
+
+    // Provider Telegram (dry-run): call/sms trả ok; thiếu cấu hình -> ok:false.
+    const { createTelegramProvider } = require('../src/providers/telegram');
+    const tg = createTelegramProvider({ TELEGRAM_BOT_TOKEN: 'x', TELEGRAM_CHAT_ID: '1', TELEGRAM_DRY_RUN: 'true' });
+    check((await tg.call({ to: '+84900000000', name: 'Mẹ', message: 'test' })).ok === true, 'Telegram call (dry-run) -> ok');
+    check((await tg.sms({ to: '+84900000000', name: 'Mẹ', message: 'test' })).ok === true, 'Telegram sms (dry-run) -> ok');
+    const tgUnset = createTelegramProvider({ TELEGRAM_DRY_RUN: 'true' });
+    check((await tgUnset.call({ to: 'x', message: 'y' })).ok === false, 'Telegram chưa cấu hình -> ok:false');
   } finally {
     server.close();
   }

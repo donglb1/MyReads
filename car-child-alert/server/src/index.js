@@ -3,6 +3,7 @@ const express = require('express');
 const { createMockProvider } = require('./providers/mock');
 const { createTwilioProvider } = require('./providers/twilio');
 const { createStringeeProvider } = require('./providers/stringee');
+const { createTelegramProvider } = require('./providers/telegram');
 const { registerDevice, getFamily, getTokens } = require('./family');
 const { sendPush } = require('./push');
 const { buildVehicleProvider } = require('./vehicle');
@@ -19,6 +20,8 @@ function buildProvider() {
       return createTwilioProvider(process.env);
     case 'stringee':
       return createStringeeProvider(process.env);
+    case 'telegram':
+      return createTelegramProvider(process.env);
     case 'mock':
     default:
       return createMockProvider();
